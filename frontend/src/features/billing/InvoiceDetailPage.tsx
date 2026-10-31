@@ -7,6 +7,7 @@ import { RecordError, RecordsLoading, RecordTable } from '../customer/RecordView
 import { useRecordResource } from '../customer/records';
 import { invoiceDetailApi, type InvoiceDetail } from './invoice-detail-api';
 import { InvoiceLifecycleBadge, InvoicePaymentBadge } from './InvoiceStatus';
+import { InvoiceActions } from './InvoiceActions';
 import './billing.css';
 
 function SnapshotMoney({ amount, currency }: { amount?: number; currency: string }) {
@@ -101,7 +102,7 @@ function InvoiceRecord({ id }: { id: string }) {
       action={invoice ? <InvoiceLifecycleBadge invoice={invoice} /> : undefined} />
     {resource.status === 'loading' && <RecordsLoading label="Loading invoice details" />}
     {resource.status === 'error' && <RecordError error={resource.error} retry={reload} />}
-    {invoice && <InvoiceDocument invoice={invoice} />}
+    {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDocument invoice={invoice} /></>}
   </>;
 }
 

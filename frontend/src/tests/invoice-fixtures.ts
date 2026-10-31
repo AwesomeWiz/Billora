@@ -1,4 +1,5 @@
 import type { InvoiceSummary } from '../features/billing/invoice-api';
+import type { InvoiceDetail } from '../features/billing/invoice-detail-api';
 
 /** Test-only records; never imported by application modules. */
 export const invoiceFixture: InvoiceSummary = {
@@ -9,3 +10,9 @@ export const invoiceFixture: InvoiceSummary = {
 };
 export const invoiceJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 export const invoicePage = (items: unknown[] = [invoiceFixture], extra = {}) => ({ items, total: items.length, page: 1, page_size: 20, has_next: false, ...extra });
+
+export const invoiceDraftFixture: InvoiceDetail = {
+  ...invoiceFixture, status: 'DRAFT', paid_minor: 0, balance_minor: invoiceFixture.total_minor, payments: [],
+  lines: [{ id: 'test-line', description: 'Historical support seats', quantity: 2, unit_price_minor: 50000,
+    line_subtotal_minor: 100000, discount_minor: 10000, tax_bps: 1800, tax_minor: 16200, total_minor: 106200 }],
+};

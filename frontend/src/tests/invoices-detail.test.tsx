@@ -1,7 +1,9 @@
 import { act, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { InvoiceDetailPage } from '../features/billing/InvoiceDetailPage';
+import { AuthProvider } from '../features/auth/AuthProvider';
+import { authService } from '../features/auth/service';
 import { formatMoney } from '../lib/format';
 import { invoiceFixture, invoiceJson as json } from './invoice-fixtures';
 
@@ -10,8 +12,9 @@ const payment = { id: 'payment-1', invoice_id: 'invoice-1', amount_minor: 20000,
 const detail = { ...invoiceFixture, lines: [line], payments: [payment] };
 function open(path = '/app/invoices/invoice-1') {
   const router = createMemoryRouter([{ path: '/app/invoices/:id', element: <InvoiceDetailPage /> }], { initialEntries: [path] });
-  render(<RouterProvider router={router} />); return router;
+  render(<AuthProvider><RouterProvider router={router} /></AuthProvider>); return router;
 }
+beforeEach(() => { vi.spyOn(authService, 'session').mockResolvedValue({ user: { id: 'test-staff', email: 'staff@example.test', role: 'STAFF' }, csrf_token: 'test-only-csrf' }); });
 
 describe('invoice detail snapshots', () => {
   it('shows loading and renders identity, historical billing details and linked subscription references', async () => {
