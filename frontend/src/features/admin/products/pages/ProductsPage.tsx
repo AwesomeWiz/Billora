@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { PageHeader, Button, LoadingSkeleton, EmptyState, ErrorState } from '../../../../components/ui';
 import { useProducts } from '../hooks/useProducts';
+import { productService } from '../services/productService';
 import { ProductFilters } from '../components/ProductFilters';
 import { ProductTable } from '../components/ProductTable';
-import type { Product } from '../types';
+import { ProductFormModal } from '../components/ProductFormModal';
+import type { Product, CreateProductInput, UpdateProductInput } from '../types';
 
 export function ProductsPage() {
   const {
@@ -20,6 +22,17 @@ export function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateSubmit = async (data: CreateProductInput | UpdateProductInput) => {
+    await productService.createProduct(data as CreateProductInput);
+    await refresh();
+  };
+
+  const handleEditSubmit = async (data: CreateProductInput | UpdateProductInput) => {
+    if (!editingProduct) return;
+    await productService.updateProduct(editingProduct.id, data as UpdateProductInput);
+    await refresh();
+  };
 
   const hasFilterActive = Boolean(params.search?.trim() || params.type || params.active);
 
@@ -145,29 +158,20 @@ export function ProductsPage() {
         </>
       )}
 
-      {/* Placeholders for modal/drawers to be connected in milestones 3 & 4 */}
-      {isCreating && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-product-title"
-          style={{ display: 'none' }}
-        >
-          <h2 id="create-product-title">Create product</h2>
-          <button onClick={() => setIsCreating(false)}>Close</button>
-        </div>
-      )}
-      {editingProduct && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-product-title"
-          style={{ display: 'none' }}
-        >
-          <h2 id="edit-product-title">Edit product</h2>
-          <button onClick={() => setEditingProduct(null)}>Close</button>
-        </div>
-      )}
+      <ProductFormModal
+        isOpen={isCreating}
+        onClose={() => setIsCreating(false)}
+        onSubmit={handleCreateSubmit}
+      />
+
+      <ProductFormModal
+        isOpen={Boolean(editingProduct)}
+        product={editingProduct}
+        onClose={() => setEditingProduct(null)}
+        onSubmit={handleEditSubmit}
+      />
+
+      {/* Placeholder for variant management modal to be connected in milestone 4 */}
       {selectedProduct && (
         <div
           role="dialog"
