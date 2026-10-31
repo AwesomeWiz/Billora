@@ -13,7 +13,7 @@ export function navigationFor(role: Role) {
     { label: 'Subscriptions', to: '/app/subscriptions', icon: Layers3, available: false },
     { label: 'Invoices', to: '/app/invoices', icon: Receipt, available: false },
     { label: 'Payments', to: '/app/payments', icon: Wallet, available: false },
-    { label: 'Customers', to: '/app/customers', icon: Users, available: false },
+    { label: 'Customers', to: '/app/customers', icon: Users, available: true },
     { label: 'Reports', to: '/app/reports', icon: BarChart3, available: false },
   ];
 }

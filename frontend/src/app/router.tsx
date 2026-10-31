@@ -2,6 +2,8 @@ import { Link, Navigate, useRouteError } from 'react-router-dom';
 import { AuthLayout, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, SessionHomeRedirect } from '../features/auth/AuthPages';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { PortalHome, AccountPage } from '../features/customer/PortalHome';
+import { CustomersPage } from '../features/customer/CustomersPage';
+import { CustomerDetailPage } from '../features/customer/CustomerDetailPage';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ErrorState, EmptyState } from '../components/ui';
 import { AppShell } from './AppShell';
@@ -30,6 +32,8 @@ export const routeConfig = [
     { path: '/app', element: <AppShell />, children: [
       { index: true, element: <Navigate to="overview" replace /> },
       { path: 'overview', element: <WorkspaceHome /> },
+      { path: 'customers', element: <CustomersPage /> },
+      { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
   ] },
