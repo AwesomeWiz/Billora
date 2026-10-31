@@ -2,54 +2,34 @@
 
 Owner: Abiya (Admin & Operations Frontend)  
 Recipient: Abhishikth (Shared Frontend Architecture, Routing & Navigation)  
-Date: 2026-10-31
+Updated: 2026-10-31
 
 This document requests routing and navigation registrations for new features implemented within Abiya's ownership.
 
 ---
 
-## 1. Route Registrations Requested
+## 1. Route Status
 
-| Feature | Requested Route | Component Export | Allowed Roles | Target Navigation Section |
-|---|---|---|---|---|
-| **Revenue Leak Radar** | `/app/revenue-radar` | `RevenueRadarPage` from `@/features/revenue-radar` | `ADMIN`, `STAFF` | Intelligence / Operations |
-| **Activity Timeline** | `/app/activity` | `ActivityTimelinePage` from `@/features/activity` | `ADMIN`, `STAFF` | Operations / Audit |
-| **Notifications Center** | `/app/notifications` | `NotificationsPage` from `@/features/notifications` | `ADMIN`, `STAFF` | Header / Workspace Tools |
+| Feature | Requested Route | Component Export | Allowed Roles | Target Navigation Section | Current Status |
+|---|---|---|---|---|---|
+| **Activity Timeline** | `/app/activity` | `ActivityTimelinePage` from `@/features/activity` | `ADMIN`, `STAFF` | Operations / Audit | **INTEGRATED BY ABHISHIKTH** (commit `055d4e4`) |
+| **Notifications Center** | `/app/notifications` | `NotificationsPage` from `@/features/notifications` | `ADMIN`, `STAFF` | Header / Tools | **INTEGRATED BY ABHISHIKTH** (commit `055d4e4`) |
+| **Revenue Leak Radar** | `/app/revenue-radar` | `RevenueRadarPage` from `@/features/revenue-radar` | `ADMIN`, `STAFF` | Intelligence / Operations | **PENDING INTEGRATION** |
+| **CSV Import** | `/app/import` | `CsvImportWizard` from `@/features/import` | `ADMIN`, `STAFF` | Settings / Data Management | **PENDING INTEGRATION** |
+| **GST Management** | `/app/gst` | `GstManagementPage` from `@/features/gst` | `ADMIN` | Compliance / Taxes | **PENDING INTEGRATION** |
 
 ---
 
-## 2. Integration Details for Abhishikth
+## 2. Integration Details for Remaining Routes
 
 ### A. Revenue Leak Radar
 - **Component:** `import { RevenueRadarPage } from '../features/revenue-radar';`
-- **Route Definition in `router.tsx`:**
-  ```tsx
-  { path: 'revenue-radar', element: <RevenueRadarPage /> },
-  ```
-- **Navigation item in `navigation.ts`:**
-  - Label: `Revenue Leak Radar`
-  - Path: `/app/revenue-radar`
-  - Roles: `ADMIN`, `STAFF`
+- **Route:** `<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><Route path="revenue-radar" element={<RevenueRadarPage />} /></ProtectedRoute>`
 
-### B. Activity Timeline
-- **Component:** `import { ActivityTimelinePage } from '../features/activity';`
-- **Route Definition in `router.tsx`:**
-  ```tsx
-  { path: 'activity', element: <ActivityTimelinePage /> },
-  ```
-- **Navigation item in `navigation.ts`:**
-  - Label: `Activity Timeline`
-  - Path: `/app/activity`
-  - Roles: `ADMIN`, `STAFF`
+### B. CSV Import Wizard
+- **Component:** `import { CsvImportWizard } from '../features/import';`
+- **Route:** `<ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}><Route path="import" element={<CsvImportWizard />} /></ProtectedRoute>`
 
-### C. Notifications Center
-- **Component:** `import { NotificationsPage } from '../features/notifications';`
-- **Route Definition in `router.tsx`:**
-  ```tsx
-  { path: 'notifications', element: <NotificationsPage /> },
-  ```
-- **Navigation item in `navigation.ts`:**
-  - Label: `Notifications`
-  - Path: `/app/notifications`
-  - Roles: `ADMIN`, `STAFF`
-
+### C. GST Compliance
+- **Component:** `import { GstManagementPage } from '../features/gst';`
+- **Route:** `<ProtectedRoute allowedRoles={['ADMIN']}><Route path="gst" element={<GstManagementPage />} /></ProtectedRoute>`
