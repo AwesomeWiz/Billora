@@ -1,5 +1,9 @@
 # Customer self-service portal integration
 
+## Current backend profile endpoint
+
+The backend now mounts authenticated `GET /api/customers/me` and `PUT /api/customers/me`. The read returns the signed-in CUSTOMER account's `id`, `email`, `role`, and optional saved `name`; the update accepts only `{ "name": "..." }`, creating or updating that account's Customer profile. Updates require the session, matching CSRF cookie/header, and trusted Origin. Email and role are intentionally not editable through this endpoint. This profile endpoint does not provide billing subscriptions, invoices, payments, or dashboard totals.
+
 ## Verified scope
 
 Inspected main through `6d8f9ff` and the existing P0 audit. The backend mounts auth/products only. `/auth/me` still omits the real User.id. Its newer Origin/product fixes do not supply customer billing reads. No auth acceptance rules were relaxed. Complete sessions in portal tests are test fixtures, not evidence that real login now works.
@@ -22,14 +26,14 @@ Backend ownership enforcement and successful owned/cross-account reads are **unv
 
 `/portal/invoices` and `/portal/invoices/:id` are CUSTOMER-only and read-only. Navigation is enabled on desktop/mobile. Invoice detail IDs do not trigger any request while ownership contracts are absent. Print is disabled with an explanation; no blank page, fabricated financial document or success is printed. No confirm/cancel/send/manual payment controls are mounted. Payment history is unavailable rather than falsely empty.
 
-`/portal/account` displays only authenticated session email/role/account_id. Profile/password/email-change endpoints are not guessed; no editable form or pretend reset delivery is shown. ADMIN/STAFF continue to redirect to their own workspace when opening portal routes.
+`/portal/account` still displays only authenticated session email/role/account_id; it has not yet been wired to `/api/customers/me`. Password and email changes remain unavailable; no pretend reset delivery is shown. ADMIN/STAFF continue to redirect to their own workspace when opening portal routes.
 
 Additional backend dependencies:
 
 - `GET /api/invoices` and `/api/invoices/{id}`: principal-scoped list/detail with stable pagination and customer-safe immutable invoice/bill-to/line/discount/tax/currency/settlement fields. Confirm list status visibility (especially DRAFT/CANCELLED). Test cross-account IDs and nested subscription/payment relations. No current-catalog joins may replace historical snapshot prices.
 - `GET /api/invoices/{id}/payments`: enforce invoice ownership first, return agreed customer-safe amount/method/date/reference/note projections. Internal actor/reconciliation metadata must not leak. No global payment listing is required or invented.
 - Browser printing must use the same authorized snapshot (or documented ownership-checked `/api/invoices/{id}/print`). The operational InvoiceDocument currently includes internal customer/subscription links and its Print control is ADMIN/STAFF-only. It is deliberately not mounted or granted CUSTOMER permission here. Extract a customer-safe document only after the customer DTO is confirmed; reuse formatters/status/table styles without exposing operational actions.
-- Freeze secure profile/password management endpoints, payloads and authorization/CSRF/Origin policy before enabling account changes.
+- Password and email changes still need explicit secure endpoints, payloads and verification policy before enabling those changes.
 
 Remaining acceptance work is blocked: actual owned lists/details, successful empty/error read states, server aggregates, payment history, financial snapshot rendering/printing and real two-account isolation tests. No test fixtures are wired into production and no passing frontend test should be read as proof of these backend behaviors.
 

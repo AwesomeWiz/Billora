@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api.auth import router as auth_router
 from app.api.products import router as products_router
 from app.api.plans import router as plans_router
+from app.api.customers import router as customers_router
 from app.core.config import settings
 from app.core.db import engine, Base
 import uvicorn
@@ -19,6 +20,7 @@ app = FastAPI(
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(products_router, prefix=settings.api_prefix)
 app.include_router(plans_router, prefix=settings.api_prefix)
+app.include_router(customers_router, prefix=settings.api_prefix)
 
 @app.get(f"{settings.api_prefix}/health")
 async def health():
