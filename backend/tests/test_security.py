@@ -144,3 +144,55 @@ async def test_customer_cannot_mutate():
         )
 
         assert response.status_code == 403, response.text
+
+
+@pytest.mark.asyncio
+async def test_plan_mutation_requires_admin_csrf_and_trusted_origin(admin_cookies):
+    client, csrf = admin_cookies
+    payload = {
+        "name": f"Test Plan {uuid.uuid4().hex}",
+        "base_fee_minor": 12500,
+        "currency": "INR",
+        "billing_interval": "MONTHLY",
+        "available_from": "2026-10-31",
+    }
+
+    response = await client.post(
+        f"{API_PREFIX}/plans",
+        json=payload,
+        headers={"X-CSRF-Token": "", "Origin": ALLOWED_ORIGIN},
+    )
+    assert response.status_code == 403, response.text
+
+    response = await client.post(
+        f"{API_PREFIX}/plans",
+        json=payload,
+        headers={"X-CSRF-Token": csrf, "Origin": "http://evil.com"},
+    )
+    assert response.status_code == 403, response.text
+
+    response = await client.post(
+        f"{API_PREFIX}/plans",
+        json=payload,
+        headers={"X-CSRF-Token": csrf, "Origin": ALLOWED_ORIGIN},
+    )
+    assert response.status_code == 201, response.text
+
+
+@pytest.mark.asyncio
+async def test_staff_cannot_mutate_plans():
+    email = await create_test_user(Role.STAFF)
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        csrf = await login_client(client, email)
+        response = await client.post(
+            f"{API_PREFIX}/plans",
+            json={
+                "name": f"Forbidden Plan {uuid.uuid4().hex}",
+                "available_from": "2026-10-31",
+            },
+            headers={"X-CSRF-Token": csrf, "Origin": ALLOWED_ORIGIN},
+        )
+        assert response.status_code == 403, response.text

@@ -1,11 +1,8 @@
 # Subscription Plans Catalog API Integration Guide
 
-## Backend Dependency Status (Owner: Adithya)
+## Backend Status
 
-As verified during inspection of `backend/app/api/`:
-- `auth.py` and `products.py` are mounted.
-- The subscription plans API router (`/api/plans`) is **pending implementation** by Adithya.
-- The frontend module (`frontend/src/features/admin/plans`) is built strictly against `ARCHITECTURE.md` §4.2, PRD §4.3 and the shared API client (`frontend/src/lib/api/client.ts`).
+The `/api/plans` router is mounted. Plan creation and updates require an authenticated `ADMIN` session, a matching CSRF cookie/header, and the trusted `http://localhost:5173` Origin. `STAFF` and `CUSTOMER` users cannot mutate plans. Listing and detail reads remain available to authenticated or anonymous callers as currently implemented.
 
 ## Required Endpoints & Schemas
 
