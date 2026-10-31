@@ -51,6 +51,7 @@ export function parseInvoiceSummary(value: unknown): InvoiceSummary {
   if (payment === 'PARTIALLY_PAID' && ((paid !== undefined && (paid <= 0 || paid >= total)) || balance === 0)) return invalidInvoice();
   if (payment === 'OVERDUE' && (balance === 0 || (paid !== undefined && paid === total))) return invalidInvoice();
   if (payment === 'UNPAID' && ((paid !== undefined && paid > 0) || status === 'PAID')) return invalidInvoice();
+  if (invoice.subtotal_minor !== undefined && invoice.discount_minor !== undefined && invoice.discount_minor > invoice.subtotal_minor) return invalidInvoice();
   if (invoice.subtotal_minor !== undefined && invoice.discount_minor !== undefined && invoice.tax_minor !== undefined &&
     BigInt(invoice.subtotal_minor) - BigInt(invoice.discount_minor) + BigInt(invoice.tax_minor) !== BigInt(total)) return invalidInvoice();
   return invoice;
