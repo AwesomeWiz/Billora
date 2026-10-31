@@ -15,4 +15,3 @@ class Invoice(Base):
     paid = Column(Boolean, default=False)
 
     subscription = relationship("Subscription", back_populates="invoices")
-    payments = relationship("Payment", back_populates="invoice")

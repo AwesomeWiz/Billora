@@ -24,8 +24,12 @@ app.include_router(plans_router, prefix=settings.api_prefix)
 async def health():
     return {"status": "ok"}
 
-# Ensure the Plan model is imported so its table is created
+# Register models with SQLAlchemy before creating the schema. These imports
+# also resolve the string-based relationships across the account hierarchy.
 from app.models.plan import Plan  # noqa: F401
+from app.models.customer import Customer  # noqa: F401
+from app.models.subscription import Subscription  # noqa: F401
+from app.models.invoice import Invoice  # noqa: F401
 
 # Create tables on startup (dev only)
 @app.on_event("startup")

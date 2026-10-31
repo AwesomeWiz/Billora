@@ -88,7 +88,10 @@ async def test_product_mutation_requires_csrf_and_origin(admin_cookies):
     response = await client.post(
         f"{API_PREFIX}/products",
         json=payload,
-        headers={"Origin": ALLOWED_ORIGIN},
+        headers={
+            "X-CSRF-Token": "",
+            "Origin": ALLOWED_ORIGIN,
+        },
     )
     assert response.status_code == 403, response.text
 
