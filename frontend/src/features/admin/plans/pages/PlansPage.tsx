@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { PageHeader, Button, LoadingSkeleton, EmptyState, ErrorState } from '../../../../components/ui';
 import { usePlans } from '../hooks/usePlans';
+import { planService } from '../services/planService';
 import { PlanFilters } from '../components/PlanFilters';
 import { PlanTable } from '../components/PlanTable';
-import type { Plan } from '../types';
+import { PlanFormModal } from '../components/PlanFormModal';
+import type { Plan, CreatePlanInput, UpdatePlanInput } from '../types';
 
 export function PlansPage() {
   const {
@@ -20,6 +22,17 @@ export function PlansPage() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateSubmit = async (data: CreatePlanInput | UpdatePlanInput) => {
+    await planService.createPlan(data as CreatePlanInput);
+    await refresh();
+  };
+
+  const handleEditSubmit = async (data: CreatePlanInput | UpdatePlanInput) => {
+    if (!editingPlan) return;
+    await planService.updatePlan(editingPlan.id, data as UpdatePlanInput);
+    await refresh();
+  };
 
   const hasFilterActive = Boolean(params.search?.trim() || params.billing_interval || params.active);
 
@@ -145,21 +158,29 @@ export function PlansPage() {
         </>
       )}
 
-      {/* Placeholders for modal/drawers to be connected in milestones 3 & 4 */}
-      {isCreating && (
-        <div role="dialog" aria-modal="true" style={{ display: 'none' }}>
-          <button onClick={() => setIsCreating(false)}>Close</button>
-        </div>
-      )}
-      {editingPlan && (
-        <div role="dialog" aria-modal="true" style={{ display: 'none' }}>
-          <button onClick={() => setEditingPlan(null)}>Close</button>
-        </div>
-      )}
+      {/* Plan Form Modal (Create) */}
+      <PlanFormModal
+        isOpen={isCreating}
+        onClose={() => setIsCreating(false)}
+        onSubmit={handleCreateSubmit}
+      />
+
+      {/* Plan Form Modal (Edit) */}
+      <PlanFormModal
+        isOpen={Boolean(editingPlan)}
+        plan={editingPlan}
+        onClose={() => setEditingPlan(null)}
+        onSubmit={handleEditSubmit}
+      />
+
+      {/* Plan Details / Summary Dialog */}
       {selectedPlan && (
-        <div role="dialog" aria-modal="true" style={{ display: 'none' }}>
-          <button onClick={() => setSelectedPlan(null)}>Close</button>
-        </div>
+        <PlanFormModal
+          isOpen={Boolean(selectedPlan)}
+          plan={selectedPlan}
+          onClose={() => setSelectedPlan(null)}
+          onSubmit={handleEditSubmit}
+        />
       )}
     </div>
   );
