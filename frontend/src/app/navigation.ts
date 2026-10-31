@@ -16,7 +16,7 @@ export function navigationFor(role: Role) {
     { label: 'Customers', to: '/app/customers', icon: Users, available: true },
     { label: 'Products & Variants', to: '/app/catalog/products', icon: CreditCard, available: true },
     { label: 'Plans', to: '/app/catalog/plans', icon: CreditCard, available: true },
-    { label: 'Reports', to: '/app/reports', icon: BarChart3, available: false },
+    { label: 'Reports', to: '/app/reports', icon: BarChart3, available: true },
   ];
 }
 

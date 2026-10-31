@@ -1,4 +1,5 @@
 import type { FinancialSummary } from '../features/dashboard/summary-api';
+import { invoiceFixture } from './invoice-fixtures';
 
 /** Test-only fixtures. No application module imports these financial records. */
 export const reportSummary: FinancialSummary = {
@@ -7,3 +8,5 @@ export const reportSummary: FinancialSummary = {
   overdue_count: 3, overdue_minor: 25000,
 };
 export const reportJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+export const overdueInvoice = { ...invoiceFixture, due_on: '2026-10-15' };
+export const overduePage = (items: unknown[] = [overdueInvoice], extra = {}) => ({ items, total: items.length, page: 1, page_size: 20, has_next: false, ...extra });

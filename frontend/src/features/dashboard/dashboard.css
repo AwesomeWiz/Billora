@@ -14,6 +14,18 @@
 .finance-shortcuts span { flex: 1; min-width: 0; }
 .finance-shortcuts strong { display: block; font-size: 13px; font-weight: 550; }
 .finance-shortcuts small { display: block; color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+.finance-report-link { margin-top: 16px; font-size: 13px; }
+.finance-report-link a { display: inline-flex; align-items: center; gap: 8px; }
+.finance-filter-controls { padding: 20px 24px; margin-bottom: 28px; }
+.finance-filter-fields { display: flex; flex-wrap: wrap; gap: 20px; }
+.finance-filter-fields .field { flex: 0 1 220px; }
+.finance-filter-controls > p { font-size: 12px; margin-top: 16px; }
+.overdue-report { margin-top: 28px; overflow: hidden; }
+.overdue-report .card-header { flex-wrap: wrap; }
+.overdue-report .record-table { min-width: 1040px; }
+.overdue-report .record-table th:nth-child(4), .overdue-report .record-table th:nth-child(5), .overdue-report .record-table th:nth-child(6) { text-align: right; }
+.finance-report-date { white-space: nowrap; }
+.finance-table-note { padding: 16px 24px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
 @media (max-width: 1000px) {
   .finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .finance-shortcuts { grid-template-columns: 1fr; }

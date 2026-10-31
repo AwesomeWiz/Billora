@@ -11,6 +11,7 @@ import { InvoiceDetailPage } from '../features/billing/InvoiceDetailPage';
 import { ProductsPage } from '../features/admin/products';
 import { PlansPage } from '../features/admin/plans';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
+import { ReportsPage } from '../features/dashboard/ReportsPage';
 import { ErrorState, EmptyState } from '../components/ui';
 import { AppShell } from './AppShell';
 import { Brand } from './Brand';
@@ -38,6 +39,7 @@ export const routeConfig = [
     { path: '/app', element: <AppShell />, children: [
       { index: true, element: <Navigate to="overview" replace /> },
       { path: 'overview', element: <WorkspaceHome /> },
+      { path: 'reports', element: <ReportsPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'subscriptions', element: <SubscriptionsPage /> },
