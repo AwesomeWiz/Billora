@@ -49,8 +49,35 @@ in paise from all unpaid invoices, and up to five recent persisted invoices.
 The legacy schema does not record a renewal schedule, so `next_renewal_date` is
 null.
 
-## Not implemented yet
+## Payments
 
-Payment history/recording and quotation/template endpoints are not available.
-The current database has no payment, idempotency, quotation, tax-rule, or
-discount-rule tables. No payment or quotation success response is fabricated.
+- `POST /api/payments` — ADMIN/STAFF only; requires session, CSRF, trusted
+  Origin, and an `Idempotency-Key` header. Accepts `invoice_id`, positive
+  `amount_minor`, `method`, and optional `note`. Uses integer paise, records the
+  acting user, allows partial payments, rejects overpayment, and returns the
+  original record for an identical idempotent retry.
+- `GET /api/invoices/{id}/payments` — authenticated; customers can see only
+  payments for their own invoices.
+
+Invoice read models now reconcile `paid_minor` and `balance_minor` against
+payment records. Legacy invoices marked paid before payment tracking remain
+reported as fully paid, but do not gain fabricated payment-history rows.
+
+## Quotations and templates
+
+- `GET,POST /api/quotation-templates` and `GET /api/quotation-templates/{id}`
+  — ADMIN/STAFF only. Template lines are checked against active product and
+  variant catalog prices.
+- `GET,POST /api/quotations`, `GET /api/quotations/{id}`, and
+  `POST /api/quotations/{id}/confirm` — ADMIN/STAFF only. Creation validates
+  catalog prices, snapshots product/variant names and integer-paise line totals,
+  creates a linked `QUOTATION` subscription, and sets a validity date.
+  Confirmation atomically moves the quotation to `ACCEPTED` and its linked
+  subscription to `CONFIRMED`; expired confirmations are rejected.
+
+Tax-rule identifiers are rejected because no tax-rule model/configuration is
+present; quotation tax is therefore zero only for requests without a tax rule.
+Discounts, subscription transitions/renewal scheduling, invoice lifecycle
+mutations, billing runs, reports, and the broader recurring-billing engine
+remain unimplemented. These limitations are intentional: the API does not
+invent tax, discount, renewal, payment, or quotation values.

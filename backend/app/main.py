@@ -6,6 +6,8 @@ from app.api.plans import router as plans_router
 from app.api.customers import router as customers_router
 from app.api.discounts import router as discounts_router
 from app.api.billing_reads import router as billing_reads_router
+from app.api.payments import router as payments_router
+from app.api.quotations import router as quotations_router
 from app.core.config import settings
 from app.core.db import engine, Base
 from app.core.admin_schema import initialize_admin_schema
@@ -26,6 +28,8 @@ app.include_router(plans_router, prefix=settings.api_prefix)
 app.include_router(customers_router, prefix=settings.api_prefix)
 app.include_router(discounts_router, prefix=settings.api_prefix)
 app.include_router(billing_reads_router, prefix=settings.api_prefix)
+app.include_router(payments_router, prefix=settings.api_prefix)
+app.include_router(quotations_router, prefix=settings.api_prefix)
 
 @app.get(f"{settings.api_prefix}/health")
 async def health():
@@ -37,6 +41,8 @@ from app.models.plan import Plan  # noqa: F401
 from app.models.customer import Customer  # noqa: F401
 from app.models.subscription import Subscription  # noqa: F401
 from app.models.invoice import Invoice  # noqa: F401
+from app.models.payment import Payment  # noqa: F401
+from app.models.quotation import Quotation, QuotationLine, QuotationTemplate, QuotationTemplateLine  # noqa: F401
 
 # Create tables on startup (dev only)
 @app.on_event("startup")

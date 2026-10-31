@@ -10,6 +10,7 @@ from app.models.account import Account, Role
 from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.plan import Plan
+from app.models.payment import Payment
 from app.models.subscription import Subscription
 from app.schemas.billing import (
     AccountDto,
@@ -58,7 +59,9 @@ def account_dto(account: Any, customer: Customer | None) -> AccountDto:
 def subscription_dto(subscription: Subscription, customer: Customer, plan: Plan) -> SubscriptionDto:
     # The legacy schema stores only ACTIVE/CANCELED/EXPIRED; preserve only the
     # supported active-vs-closed distinction and do not invent renewal dates.
-    state = "ACTIVE" if subscription.status == "ACTIVE" else "CLOSED"
+    state = subscription.status if subscription.status in {
+        "DRAFT", "QUOTATION", "CONFIRMED", "ACTIVE", "PAUSED", "CLOSED"
+    } else "CLOSED"
     return SubscriptionDto(
         id=subscription.id,
         number=subscription.id,
@@ -80,9 +83,10 @@ def invoice_dto(
     customer: Customer,
     account: Account,
     _plan: Plan,
+    recorded_paid: int,
 ) -> InvoiceDto:
     total = invoice.amount_paise
-    paid = total if invoice.paid else 0
+    paid = total if invoice.paid else recorded_paid
     return InvoiceDto(
         id=invoice.id,
         number=invoice.id,
@@ -94,7 +98,7 @@ def invoice_dto(
         total_minor=total,
         paid_minor=paid,
         balance_minor=total - paid,
-        payment_status="PAID" if invoice.paid else "UNPAID",
+        payment_status="PAID" if invoice.paid else ("PARTIALLY_PAID" if paid else "UNPAID"),
         billing_account=InvoiceAccountDto(
             id=customer.account_id,
             display_name=customer.name.strip() or account.email,
@@ -112,8 +116,14 @@ def subscription_stmt():
 
 
 def invoice_stmt():
+    recorded_paid = (
+        select(func.coalesce(func.sum(Payment.amount_minor), 0))
+        .where(Payment.invoice_id == Invoice.id)
+        .correlate(Invoice)
+        .scalar_subquery()
+    )
     return (
-        select(Invoice, Subscription, Customer, Account, Plan)
+        select(Invoice, Subscription, Customer, Account, Plan, recorded_paid)
         .join(Subscription, Invoice.subscription_id == Subscription.id)
         .join(Customer, Subscription.customer_id == Customer.id)
         .join(Account, Customer.account_id == Account.id)
@@ -253,9 +263,15 @@ async def customer_dashboard(current=Depends(get_current_user), db: AsyncSession
             Subscription.customer_id == customer.id, Subscription.status == "ACTIVE"
         )
     ) or 0
+    paid_by_invoice = (
+        select(Payment.invoice_id, func.sum(Payment.amount_minor).label("paid_minor"))
+        .group_by(Payment.invoice_id)
+        .subquery()
+    )
     total_outstanding = await db.scalar(
-        select(func.coalesce(func.sum(Invoice.amount_paise), 0))
+        select(func.coalesce(func.sum(Invoice.amount_paise - func.coalesce(paid_by_invoice.c.paid_minor, 0)), 0))
         .join(Subscription, Invoice.subscription_id == Subscription.id)
+        .outerjoin(paid_by_invoice, paid_by_invoice.c.invoice_id == Invoice.id)
         .where(Subscription.customer_id == customer.id, Invoice.paid.is_(False))
     ) or 0
     invoice_rows = (await db.execute(

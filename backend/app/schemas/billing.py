@@ -53,7 +53,7 @@ class InvoiceDto(BaseModel):
     total_minor: int
     paid_minor: int
     balance_minor: int
-    payment_status: Literal["UNPAID", "PAID"]
+    payment_status: Literal["UNPAID", "PARTIALLY_PAID", "PAID"]
     billing_account: InvoiceAccountDto
 
 
