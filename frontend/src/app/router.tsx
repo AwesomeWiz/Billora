@@ -8,6 +8,7 @@ import { SubscriptionsPage } from '../features/subscriptions/SubscriptionsPage';
 import { SubscriptionDetailPage } from '../features/subscriptions/SubscriptionDetailPage';
 import { InvoiceListPage } from '../features/billing/InvoiceListPage';
 import { InvoiceDetailPage } from '../features/billing/InvoiceDetailPage';
+import { ProductsPage } from '../features/admin/products';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ErrorState, EmptyState } from '../components/ui';
 import { AppShell } from './AppShell';
@@ -42,6 +43,7 @@ export const routeConfig = [
       { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
       { path: 'invoices', element: <InvoiceListPage /> },
       { path: 'invoices/:id', element: <InvoiceDetailPage /> },
+      { path: 'catalog/products', element: <ProductsPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
   ] },
