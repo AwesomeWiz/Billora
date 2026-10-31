@@ -2,6 +2,13 @@
 .invoice-payment-history { margin-top: 24px; overflow: hidden; }
 .invoice-payment-history .card-header { flex-wrap: wrap; gap: 16px; }
 .invoice-payment-history .record-table th:nth-child(2) { text-align: right; }
+.payment-recording { margin-top: 24px; padding: 24px; }
+.payment-recording h2 { font-size: 16px; margin-bottom: 8px; }
+.payment-recording form { display: grid; gap: 20px; margin-top: 24px; }
+.payment-recording form > .button { justify-self: start; }
+.payment-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 20px; }
+.payment-review-dialog > p, .payment-review-dialog > div { margin-top: 16px; }
+.payment-review-dialog dd { overflow-wrap: anywhere; }
 .invoice-actions { padding: 24px; margin-bottom: 24px; }
 .invoice-actions h2 { font-size: 16px; margin-bottom: 8px; }
 .invoice-action-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 24px; margin-top: 20px; }

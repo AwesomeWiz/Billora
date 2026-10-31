@@ -10,6 +10,7 @@ import { InvoiceLifecycleBadge, InvoicePaymentBadge } from './InvoiceStatus';
 import { InvoiceActions } from './InvoiceActions';
 import { InvoiceDelivery, InvoicePrint } from './InvoiceOutput';
 import { InvoicePaymentHistory } from './InvoicePaymentHistory';
+import { PaymentRecording } from './PaymentRecording';
 import './billing.css';
 
 function SnapshotMoney({ amount, currency }: { amount?: number; currency: string }) {
@@ -100,6 +101,7 @@ function InvoiceRecord({ id }: { id: string }) {
   const load = useCallback((signal: AbortSignal) => invoiceDetailApi.detail(id, signal), [id]);
   const { resource, reload } = useRecordResource(id, load);
   const invoice = resource.status === 'ready' ? resource.data : null;
+  function refreshPayments() { setHistoryOpen(true); reload(); }
   return <div className="invoice-detail-page">
     <PageHeader title={invoice?.number ?? 'Invoice details'} description="Invoice snapshots, recorded charges, and settlement information."
       breadcrumbs={[{ label: 'Invoices', href: '/app/invoices' }, { label: invoice?.number ?? 'Details' }]}
@@ -107,7 +109,8 @@ function InvoiceRecord({ id }: { id: string }) {
     {resource.status === 'loading' && <RecordsLoading label="Loading invoice details" />}
     {resource.status === 'error' && <RecordError error={resource.error} retry={reload} />}
     {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDelivery invoice={invoice} /><InvoicePrint key={invoice.id} invoice={invoice} /><InvoiceDocument invoice={invoice} />
-      <InvoicePaymentHistory invoice={invoice} expanded={historyOpen} onExpand={setHistoryOpen} onRefresh={reload} /></>}
+      <InvoicePaymentHistory invoice={invoice} expanded={historyOpen} onExpand={setHistoryOpen} onRefresh={refreshPayments} />
+      <PaymentRecording invoice={invoice} onRefresh={refreshPayments} /></>}
   </div>;
 }
 
