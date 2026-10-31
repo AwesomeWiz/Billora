@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from app.api.auth import router as auth_router
 from app.api.products import router as products_router
+from app.api.plans import router as plans_router
 from app.core.config import settings
 from app.core.db import engine, Base
 import uvicorn
@@ -16,12 +17,17 @@ app = FastAPI(
 
 # Register routers
 app.include_router(auth_router, prefix=settings.api_prefix)
-app.include_router(products_router, prefix=settings.api_prefix)# Health endpoint
+app.include_router(products_router, prefix=settings.api_prefix)
+app.include_router(plans_router, prefix=settings.api_prefix)
+
 @app.get(f"{settings.api_prefix}/health")
 async def health():
     return {"status": "ok"}
 
-# Create tables on startup (for dev only; migrations should be used in prod)
+# Ensure the Plan model is imported so its table is created
+from app.models.plan import Plan  # noqa: F401
+
+# Create tables on startup (dev only)
 @app.on_event("startup")
 async def on_startup():
     async with engine.begin() as conn:

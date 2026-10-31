@@ -14,7 +14,7 @@ from ..schemas.product import (
     VariantCreate,
     VariantOut,
 )
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, verify_csrf, verify_origin
 
 router = APIRouter(prefix="/products", tags=["Catalog"])
 
@@ -22,6 +22,9 @@ async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as db:
         yield db
 
+# ------------------------------------------------------------------
+# Product list (public)
+# ------------------------------------------------------------------
 @router.get("/", response_model=List[ProductOut])
 async def list_products(
     skip: int = Query(0, ge=0),
@@ -37,13 +40,16 @@ async def list_products(
     products = result.scalars().all()
     return [ProductOut.from_orm(p) for p in products]
 
-@router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+# ------------------------------------------------------------------
+# Product mutations (protected)
+# ------------------------------------------------------------------
+@router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def create_product(
     payload: ProductCreate,
-    user=Depends(get_current_user),
+    user=Depends(require_role("ADMIN", "STAFF")),
     db: AsyncSession = Depends(get_db),
 ):
-    require_role(user, "ADMIN", "STAFF")
     product = Product(**payload.dict())
     db.add(product)
     await db.commit()
@@ -57,14 +63,14 @@ async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return ProductOut.from_orm(product)
 
-@router.patch("/{product_id}", response_model=ProductOut)
+@router.patch("/{product_id}", response_model=ProductOut,
+    dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def update_product(
     product_id: str,
     payload: ProductUpdate,
-    user=Depends(get_current_user),
+    user=Depends(require_role("ADMIN", "STAFF")),
     db: AsyncSession = Depends(get_db),
 ):
-    require_role(user, "ADMIN", "STAFF")
     product = await db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -77,14 +83,16 @@ async def update_product(
     await db.refresh(product)
     return ProductOut.from_orm(product)
 
-# Variant endpoints
-@router.post("/variants", response_model=VariantOut, status_code=status.HTTP_201_CREATED)
+# ------------------------------------------------------------------
+# Variant endpoints (protected)
+# ------------------------------------------------------------------
+@router.post("/variants", response_model=VariantOut, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def create_variant(
     payload: VariantCreate,
-    user=Depends(get_current_user),
+    user=Depends(require_role("ADMIN", "STAFF")),
     db: AsyncSession = Depends(get_db),
 ):
-    require_role(user, "ADMIN", "STAFF")
     product = await db.get(Product, payload.product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Parent product not found")

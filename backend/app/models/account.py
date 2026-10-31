@@ -19,3 +19,4 @@ class Account(Base):
     is_active = Column(Boolean, default=True)
 
     users = relationship("User", back_populates="account")
+    customer = relationship("Customer", back_populates="account", uselist=False)

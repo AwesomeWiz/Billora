@@ -78,28 +78,62 @@ async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends
     response.set_cookie(key=SESSION_COOKIE, value=raw, httponly=True, samesite="lax", max_age=COOKIE_MAX_AGE)
     return LoginOut(detail="logged in")
 
-async def get_current_user(token: str = Cookie(None, alias=SESSION_COOKIE), db: AsyncSession = Depends(get_db)):
+async def get_current_user(
+    token: str = Cookie(None, alias=SESSION_COOKIE),
+    db: AsyncSession = Depends(get_db),
+):
     if not token:
-        raise HTTPException(status_code=401, detail="Missing session token")
+        raise HTTPException(
+            status_code=401,
+            detail="Missing session token",
+        )
+
     token_h = hash_token(token)
     sess = await db.scalar(
-    select(UserSession).where(
-        UserSession.token_hash == token_h,
-        UserSession.expires_at > func.now(),
-        UserSession.is_revoked.is_(False),
+        select(UserSession).where(
+            UserSession.token_hash == token_h,
+            UserSession.expires_at > func.now(),
+            UserSession.is_revoked.is_(False),
+        )
     )
-)
+
     if not sess:
-        raise HTTPException(status_code=401, detail="Invalid or expired session")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired session",
+        )
+
     user = await db.get(User, sess.user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid session user")
+
     account = await db.get(Account, user.account_id)
+    if not account:
+        raise HTTPException(status_code=401, detail="Invalid session account")
+
     return {"user": user, "account": account}
 
 @router.get("/me")
-async def me(info: dict = Depends(get_current_user), csrf: str = Cookie(None, alias=CSRF_COOKIE)):
-    acct = info["account"]
-    return {"user": {"account_id": acct.id, "email": acct.email, "role": acct.role}, "csrf_token": csrf}
+async def me(
+    info: dict = Depends(get_current_user),
+    csrf: str = Cookie(None, alias=CSRF_COOKIE),
+):
+    user = info["user"]
+    account = info["account"]
 
+    return {
+        "user": {
+            "id": user.id,
+            "account_id": account.id,
+            "email": account.email,
+            "role": (
+                account.role.value
+                if hasattr(account.role, "value")
+                else account.role
+            ),
+        },
+        "csrf_token": csrf,
+    }
 @router.post("/logout", dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def logout(response: Response, token: str = Cookie(None, alias=SESSION_COOKIE), db: AsyncSession = Depends(get_db)):
     if token:
