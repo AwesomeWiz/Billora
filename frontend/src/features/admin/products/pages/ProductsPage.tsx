@@ -5,6 +5,7 @@ import { productService } from '../services/productService';
 import { ProductFilters } from '../components/ProductFilters';
 import { ProductTable } from '../components/ProductTable';
 import { ProductFormModal } from '../components/ProductFormModal';
+import { VariantManagerModal } from '../components/VariantManagerModal';
 import type { Product, CreateProductInput, UpdateProductInput } from '../types';
 
 export function ProductsPage() {
@@ -171,18 +172,12 @@ export function ProductsPage() {
         onSubmit={handleEditSubmit}
       />
 
-      {/* Placeholder for variant management modal to be connected in milestone 4 */}
-      {selectedProduct && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="variants-title"
-          style={{ display: 'none' }}
-        >
-          <h2 id="variants-title">Variants</h2>
-          <button onClick={() => setSelectedProduct(null)}>Close</button>
-        </div>
-      )}
+      <VariantManagerModal
+        isOpen={Boolean(selectedProduct)}
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onVariantsUpdated={() => void refresh()}
+      />
     </div>
   );
 }
