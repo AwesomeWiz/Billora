@@ -30,10 +30,19 @@ function responseError(status: number, data: unknown): ApiError {
     429: 'Too many requests. Please wait before trying again.',
   };
   // Never surface unexpected server tracebacks, proxy HTML, or raw validation inputs.
-  const message = status < 500 && typeof body.message === 'string'
-    ? body.message : defaults[status] ?? 'The service could not complete this request. Please try again.';
+  const serverMessage = typeof body.message === 'string' ? body.message
+    : typeof body.detail === 'string' ? body.detail : undefined;
+  const message = status < 500 && serverMessage?.trim()
+    ? serverMessage : defaults[status] ?? 'The service could not complete this request. Please try again.';
+  // FastAPI validation items may include the submitted password in `input` or
+  // nested context. Keep only field location, safe validator text and error type.
+  const validationDetails = Array.isArray(body.detail) ? body.detail.filter(isRecord).map(issue => ({
+    loc: Array.isArray(issue.loc) ? issue.loc.filter(part => typeof part === 'string' || typeof part === 'number') : [],
+    msg: typeof issue.msg === 'string' ? issue.msg : 'Invalid value',
+    type: typeof issue.type === 'string' ? issue.type : undefined,
+  })) : undefined;
   return new ApiError(status, typeof body.code === 'string' ? body.code : `HTTP_${status}`,
-    message, body.details ?? body.detail, typeof body.request_id === 'string' ? body.request_id : undefined);
+    message, status < 500 ? body.details ?? validationDetails : undefined, typeof body.request_id === 'string' ? body.request_id : undefined);
 }
 
 export interface RequestOptions {

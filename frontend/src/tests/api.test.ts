@@ -58,6 +58,26 @@ describe('API transport and mutation safety', () => {
     await expect(client.get('/accounts')).rejects.toMatchObject({ status: 422, message: 'Check the information you entered and try again.' });
   });
 
+  it.each([[401, 'Invalid credentials'], [409, 'Email already registered']])('preserves the verified FastAPI HTTP %s detail message', async (status, message) => {
+    const client = createApiClient({ fetcher: vi.fn().mockResolvedValue(json({ detail: message }, status as number)) });
+    await expect(client.get('/auth/me')).rejects.toMatchObject({ status, message });
+  });
+
+  it('removes submitted inputs and nested contexts from FastAPI validation errors', async () => {
+    const detail = [{ loc: ['body', 'password'], msg: 'Password must contain upper, lower & special char', type: 'value_error', input: 'test-only-sensitive-input', ctx: { error: 'test-only-sensitive-input' } }];
+    const client = createApiClient({ fetcher: vi.fn().mockResolvedValue(json({ detail }, 422)) });
+    const error = await client.get('/auth/me').catch(value => value);
+    expect(error.details).toEqual([{ loc: ['body', 'password'], msg: detail[0].msg, type: 'value_error' }]);
+    expect(JSON.stringify(error)).not.toContain('test-only-sensitive-input');
+  });
+
+  it('does not retain raw FastAPI server trace details', async () => {
+    const client = createApiClient({ fetcher: vi.fn().mockResolvedValue(json({ detail: 'Internal traceback', details: { sql: 'Internal SQL' } }, 500)) });
+    const error = await client.get('/auth/me').catch(value => value);
+    expect(error.message).not.toContain('traceback');
+    expect(error.details).toBeUndefined();
+  });
+
   it('does not expose server internals or accept proxy HTML as a successful API result', async () => {
     const client = createApiClient({ fetcher: vi.fn().mockResolvedValueOnce(json({ message: 'SQL internal traceback' }, 500))
       .mockResolvedValueOnce(new Response('<html>Vite fallback</html>', { headers: { 'Content-Type': 'text/html' } })) });
