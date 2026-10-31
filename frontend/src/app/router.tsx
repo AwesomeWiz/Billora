@@ -15,6 +15,8 @@ import { PlansPage } from '../features/admin/plans';
 import { TaxesPage } from '../features/admin/taxes';
 import { DiscountsPage } from '../features/admin/discounts';
 import { QuotationTemplatesPage, QuotationsPage } from '../features/quotations';
+import { ActivityTimelinePage } from '../features/activity';
+import { NotificationsPage } from '../features/notifications';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ReportsPage } from '../features/dashboard/ReportsPage';
 import { ErrorState, EmptyState } from '../components/ui';
@@ -45,6 +47,8 @@ export const routeConfig = [
       { index: true, element: <Navigate to="overview" replace /> },
       { path: 'overview', element: <WorkspaceHome /> },
       { path: 'reports', element: <ReportsPage /> },
+      { path: 'activity', element: <ActivityTimelinePage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
       { path: 'customers', element: <CustomersPage /> },
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'subscriptions', element: <SubscriptionsPage /> },
