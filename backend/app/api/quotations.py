@@ -7,11 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.auth import get_current_user, verify_csrf, verify_origin
 from app.api.billing_reads import get_db, page_response
 from app.models.account import Account, Role
+from app.models.activity import ActivityEvent
 from app.models.customer import Customer
 from app.models.plan import Plan
 from app.models.product import Product
 from app.models.product_variant import ProductVariant
 from app.models.quotation import Quotation, QuotationLine, QuotationTemplate, QuotationTemplateLine
+from app.models.tax import TaxRule
 from app.models.subscription import Subscription
 from app.schemas.quotations import (
     CreateQuotation,
@@ -92,9 +94,7 @@ async def quotation_response(db: AsyncSession, quotation: Quotation):
     }
 
 
-async def authoritative_line(db: AsyncSession, line):
-    if line.tax_rule_id:
-        raise HTTPException(status_code=422, detail="Tax rules are not configured in this database")
+async def authoritative_line(db: AsyncSession, line, today):
     product = await db.get(Product, line.source_product_id)
     if product is None or not product.active:
         raise HTTPException(status_code=422, detail="Product is unavailable")
@@ -107,7 +107,18 @@ async def authoritative_line(db: AsyncSession, line):
         expected_price += variant.price_adjust_minor
     if line.unit_price_minor != expected_price:
         raise HTTPException(status_code=422, detail="Unit price must match the current product catalog")
-    return product, variant, expected_price * line.quantity
+    subtotal = expected_price * line.quantity
+    tax_minor = 0
+    if line.tax_rule_id:
+        tax = await db.get(TaxRule, line.tax_rule_id)
+        if tax is None or not tax.active or tax.effective_from > today or (
+            tax.effective_to is not None and tax.effective_to < today
+        ):
+            raise HTTPException(status_code=422, detail="Tax rule is unavailable or outside its effective dates")
+        if tax.scope == "PRODUCT" and tax.product_id != product.id:
+            raise HTTPException(status_code=422, detail="Tax rule does not apply to this product")
+        tax_minor = (subtotal * tax.rate_bps + 5000) // 10000
+    return product, variant, subtotal, tax_minor
 
 
 @router.get("/quotation-templates", response_model=TemplatePage)
@@ -145,20 +156,22 @@ async def create_template(
     db.add(template)
     await db.flush()
     for line in payload.lines:
-        if line.tax_rule_id:
-            raise HTTPException(status_code=422, detail="Tax rules are not configured in this database")
         product = await db.get(Product, line.product_id)
         if product is None or not product.active:
             raise HTTPException(status_code=422, detail="Product is unavailable")
         variant = await db.get(ProductVariant, line.variant_id) if line.variant_id else None
         if line.variant_id and (variant is None or variant.product_id != product.id or not variant.active):
             raise HTTPException(status_code=422, detail="Variant is unavailable for this product")
+        if line.tax_rule_id:
+            tax = await db.get(TaxRule, line.tax_rule_id)
+            if tax is None or (tax.scope == "PRODUCT" and tax.product_id != product.id):
+                raise HTTPException(status_code=422, detail="Tax rule is unavailable for this product")
         expected_price = product.sales_price_minor + (variant.price_adjust_minor if variant else 0)
         if line.unit_price_minor is not None and line.unit_price_minor != expected_price:
             raise HTTPException(status_code=422, detail="Unit price must match the current product catalog")
         db.add(QuotationTemplateLine(
             template_id=template.id, product_id=product.id, variant_id=variant.id if variant else None,
-            quantity=line.quantity, unit_price_minor=expected_price, tax_rule_id=None,
+            quantity=line.quantity, unit_price_minor=expected_price, tax_rule_id=line.tax_rule_id,
         ))
     await db.commit()
     await db.refresh(template)
@@ -258,21 +271,29 @@ async def create_quotation(
         template_lines = (await db.scalars(
             select(QuotationTemplateLine).where(QuotationTemplateLine.template_id == template.id)
         )).all()
-        template_signature = sorted((l.product_id, l.variant_id, l.quantity, l.unit_price_minor) for l in template_lines)
-        request_signature = sorted((l.source_product_id, l.variant_id, l.quantity, l.unit_price_minor) for l in input_lines)
+        template_signature = sorted(
+            (l.product_id, l.variant_id, l.quantity, l.unit_price_minor, l.tax_rule_id)
+            for l in template_lines
+        )
+        request_signature = sorted(
+            (l.source_product_id, l.variant_id, l.quantity, l.unit_price_minor, l.tax_rule_id)
+            for l in input_lines
+        )
         if template_signature != request_signature:
             raise HTTPException(status_code=422, detail="Quotation lines must match the selected template")
 
     subtotal = 0
+    tax_total = 0
     total_quantity = 0
     snapshots = []
     for line in input_lines:
-        product, variant, line_total = await authoritative_line(db, line)
+        product, variant, line_subtotal, line_tax = await authoritative_line(db, line, today)
         if product.currency != "INR":
             raise HTTPException(status_code=422, detail="Only INR catalog prices are supported")
-        subtotal += line_total
+        subtotal += line_subtotal
+        tax_total += line_tax
         total_quantity += line.quantity
-        snapshots.append((line, product, variant, line_total))
+        snapshots.append((line, product, variant, line_subtotal))
     if total_quantity < plan.min_quantity:
         raise HTTPException(status_code=422, detail="Quotation does not meet the plan minimum quantity")
     valid_days = template.validity_days if template else payload.validity_days
@@ -288,11 +309,16 @@ async def create_quotation(
         number=quotation_number, subscription_id=subscription.id, account_id=account.id,
         template_id=template.id if template else None, issued_on=today,
         valid_until=today + timedelta(days=valid_days), status="ISSUED",
-        terms=payload.terms, subtotal_minor=subtotal, tax_minor=0, total_minor=subtotal,
+        terms=payload.terms, subtotal_minor=subtotal, tax_minor=tax_total, total_minor=subtotal + tax_total,
         created_by=current["user"].id,
     )
     db.add(quotation)
     await db.flush()
+    db.add(ActivityEvent(
+        event_type="QUOTATION_CREATED", entity_type="quotation", entity_id=quotation.id,
+        actor_id=current["user"].id, actor_kind="USER", account_id=account.id,
+        summary=f"Quotation {quotation.number} created.",
+    ))
     for line, product, variant, line_total in snapshots:
         db.add(QuotationLine(
             quotation_id=quotation.id, source_product_id=product.id, variant_id=variant.id if variant else None,
@@ -326,5 +352,10 @@ async def confirm_quotation(
         raise HTTPException(status_code=409, detail="Linked subscription is not awaiting confirmation")
     quotation.status = "ACCEPTED"
     subscription.status = "CONFIRMED"
+    db.add(ActivityEvent(
+        event_type="QUOTATION_ACCEPTED", entity_type="quotation", entity_id=quotation.id,
+        actor_id=current["user"].id, actor_kind="USER", account_id=quotation.account_id,
+        summary=f"Quotation {quotation.number} accepted.",
+    ))
     await db.commit()
     return await quotation_response(db, quotation)

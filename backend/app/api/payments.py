@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.auth import get_current_user, verify_csrf, verify_origin
 from app.core.db import AsyncSessionLocal
 from app.models.account import Role
+from app.models.activity import ActivityEvent
 from app.models.customer import Customer
 from app.models.invoice import Invoice
 from app.models.payment import Payment
@@ -87,6 +88,16 @@ async def record_payment(
             request_hash=request_hash,
         )
         db.add(payment)
+        account_id = await db.scalar(
+            select(Customer.account_id)
+            .join(Subscription, Subscription.customer_id == Customer.id)
+            .where(Subscription.id == invoice.subscription_id)
+        )
+        db.add(ActivityEvent(
+            event_type="PAYMENT_RECORDED", entity_type="invoice", entity_id=invoice.id,
+            actor_id=current["user"].id, actor_kind="USER", account_id=account_id,
+            summary=f"Payment of {payload.amount_minor} paise recorded for invoice.",
+        ))
         if payload.amount_minor == balance:
             invoice.paid = True
         await db.commit()

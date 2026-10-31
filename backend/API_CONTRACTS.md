@@ -75,9 +75,52 @@ reported as fully paid, but do not gain fabricated payment-history rows.
   Confirmation atomically moves the quotation to `ACCEPTED` and its linked
   subscription to `CONFIRMED`; expired confirmations are rejected.
 
-Tax-rule identifiers are rejected because no tax-rule model/configuration is
-present; quotation tax is therefore zero only for requests without a tax rule.
-Discounts, subscription transitions/renewal scheduling, invoice lifecycle
-mutations, billing runs, reports, and the broader recurring-billing engine
-remain unimplemented. These limitations are intentional: the API does not
-invent tax, discount, renewal, payment, or quotation values.
+Quotation lines can reference active effective tax rules. Tax is calculated in
+integer paise using basis points and half-up rounding; product-scoped rules are
+checked against the line's product. Taxable quote totals are snapshotted. Tax
+rules are managed through `GET,POST /api/taxes`, `GET /api/taxes/{id}`, and
+`PATCH /api/taxes/{id}`; reads allow ADMIN/STAFF and mutations require ADMIN,
+CSRF, and trusted Origin.
+
+## Revenue Radar, activity, and notifications
+
+- `GET /api/alerts/revenue-leaks` — ADMIN/STAFF. Detects persisted overdue
+  invoice balances, including partial payments. Summary amounts use paise.
+- `GET /api/events` — authenticated and paginated; customer accounts see only
+  events associated with their account. Payment and quotation create/accept
+  actions are recorded transactionally.
+- `GET /api/notifications` and read/read-all routes — authenticated and scoped
+  to the current user.
+- `POST /api/notifications/renewals/run` — ADMIN/STAFF; creates deduplicated
+  `PREVIEW_ONLY` notices for subscriptions with a persisted end date exactly
+  7, 3, or 1 days away. No email is sent.
+
+There is no persisted next-billing date or billing-cycle table, so missed-cycle
+and blocked-billing findings are not emitted. Notifications reflect recorded
+subscription end dates only; they are not a substitute for recurring billing.
+
+## CSV product import
+
+- `POST /api/imports/preview` accepts multipart CSV, creates a per-user staged
+  import, and returns headers/sample rows. Uploads are limited to 2 MB and
+  5,000 data rows.
+- `POST /api/imports/validate` validates product mappings and integer paise.
+- `POST /api/imports` creates valid product rows once; retries of an executed
+  batch conflict. ADMIN only; batch reads/writes are bound to the creating user.
+
+Customer and subscription imports are deliberately rejected until their
+required identity and lifecycle validation workflows exist.
+
+## GST settings and limitations
+
+- `GET,PATCH /api/gst/settings` — ADMIN/STAFF reads; ADMIN-only writes.
+- `GET /api/gst/intelligence` and `GET /api/gst/errors` return recorded-state
+  summaries. Current invoices do not store tax snapshots, so intelligence
+  returns zero recorded tax and `tax_snapshot_data_available: false`; no GST
+  errors are generated or simulated. Approving an unknown error returns 404.
+
+Discount application, subscription transitions/renewal scheduling, invoice
+lifecycle mutations, recurring billing, financial reports, password reset,
+staff administration, demo seeding, and performance benchmarks remain
+unimplemented. These limitations are intentional: endpoints do not invent
+tax, discount, renewal, or compliance records.

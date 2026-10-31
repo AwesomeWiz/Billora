@@ -38,13 +38,27 @@ async def quotation_fixture():
 async def test_quotation_templates_and_acceptance_use_catalog_price(clients):
     account_id, plan_id, product_id, variant_id = await quotation_fixture()
     admin = clients[Role.ADMIN.value]
+    tax = await admin.post(
+        "/api/taxes",
+        json={
+            "name": "GST 18%",
+            "rate_bps": 1800,
+            "scope": "GLOBAL",
+            "effective_from": "2026-01-01",
+            "active": True,
+        },
+    )
+    assert tax.status_code == 201, tax.text
     template = await admin.post(
         "/api/quotation-templates",
         json={
             "name": "Odoo setup",
             "plan_id": plan_id,
             "validity_days": 14,
-            "lines": [{"product_id": product_id, "variant_id": variant_id, "quantity": 2}],
+            "lines": [{
+                "product_id": product_id, "variant_id": variant_id, "quantity": 2,
+                "tax_rule_id": tax.json()["id"],
+            }],
         },
     )
     assert template.status_code == 201, template.text
@@ -62,13 +76,15 @@ async def test_quotation_templates_and_acceptance_use_catalog_price(clients):
                 "variant_id": variant_id,
                 "quantity": 2,
                 "unit_price_minor": 206000,
+                "tax_rule_id": tax.json()["id"],
             }],
         },
     )
     assert created.status_code == 201, created.text
     quote = created.json()
     assert quote["subtotal_minor"] == 412000
-    assert quote["tax_minor"] == 0
+    assert quote["tax_minor"] == 74160
+    assert quote["total_minor"] == 486160
     assert quote["status"] == "ISSUED"
     assert quote["subscription"]["status"] == "QUOTATION"
 
