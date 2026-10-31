@@ -4,8 +4,10 @@ from app.api.auth import router as auth_router
 from app.api.products import router as products_router
 from app.api.plans import router as plans_router
 from app.api.customers import router as customers_router
+from app.api.discounts import router as discounts_router
 from app.core.config import settings
 from app.core.db import engine, Base
+from app.core.admin_schema import initialize_admin_schema
 import uvicorn
 
 app = FastAPI(
@@ -21,6 +23,7 @@ app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(products_router, prefix=settings.api_prefix)
 app.include_router(plans_router, prefix=settings.api_prefix)
 app.include_router(customers_router, prefix=settings.api_prefix)
+app.include_router(discounts_router, prefix=settings.api_prefix)
 
 @app.get(f"{settings.api_prefix}/health")
 async def health():
@@ -37,7 +40,7 @@ from app.models.invoice import Invoice  # noqa: F401
 @app.on_event("startup")
 async def on_startup():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(initialize_admin_schema)
 
 @app.on_event("shutdown")
 async def on_shutdown():
