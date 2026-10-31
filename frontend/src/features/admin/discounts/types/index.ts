@@ -167,6 +167,6 @@ export function percentToBps(value: string | number): number | null {
 export function bpsToPercent(bps: number, formatted = false): string {
   if (!Number.isSafeInteger(bps) || bps < 0) return formatted ? '0%' : '0';
   const val = bps / 100;
-  const str = Number.isInteger(val) ? val.toString() : val.toFixed(2);
+  const str = Number.isInteger(val) ? val.toString() : val.toString();
   return formatted ? `${str}%` : str;
 }

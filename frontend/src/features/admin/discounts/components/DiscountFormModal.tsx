@@ -279,11 +279,13 @@ export function DiscountFormModal({
                   setErrors((prev) => ({ ...prev, value: '' }));
                 }}
                 disabled={submitting}
-                options={DISCOUNT_KINDS.map((k) => ({
-                  label: DISCOUNT_KIND_LABELS[k],
-                  value: k,
-                }))}
-              />
+              >
+                {DISCOUNT_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {DISCOUNT_KIND_LABELS[k]}
+                  </option>
+                ))}
+              </Select>
             </div>
 
             <div>
@@ -338,11 +340,13 @@ export function DiscountFormModal({
                   setErrors((prev) => ({ ...prev, product_id: '' }));
                 }}
                 disabled={submitting}
-                options={DISCOUNT_SCOPES.map((s) => ({
-                  label: DISCOUNT_SCOPE_LABELS[s],
-                  value: s,
-                }))}
-              />
+              >
+                {DISCOUNT_SCOPES.map((s) => (
+                  <option key={s} value={s}>
+                    {DISCOUNT_SCOPE_LABELS[s]}
+                  </option>
+                ))}
+              </Select>
               <p className="text-xs text-slate-500 mt-1">
                 {scope === 'PRODUCT'
                   ? 'Applies specifically to lines containing the chosen product.'
@@ -355,17 +359,22 @@ export function DiscountFormModal({
                 <Select
                   label="Target Product *"
                   value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
+                  onChange={(e) => {
+                    setProductId(e.target.value);
+                    if (e.target.value) {
+                      setErrors((prev) => ({ ...prev, product_id: '' }));
+                    }
+                  }}
                   disabled={submitting || loadingProducts}
-                  options={[
-                    { label: loadingProducts ? 'Loading products...' : 'Select a product...', value: '' },
-                    ...products.map((p) => ({
-                      label: `${p.name} (${p.type})`,
-                      value: p.id,
-                    })),
-                  ]}
                   error={errors.product_id || productError || undefined}
-                />
+                >
+                  <option value="">{loadingProducts ? 'Loading products...' : 'Select a product...'}</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.type})
+                    </option>
+                  ))}
+                </Select>
               </div>
             ) : (
               <div className="flex items-center pt-6 text-xs text-slate-400 italic">

@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { Input, Select, Button } from '../../../../components/ui';
 import {
   DISCOUNT_KINDS,
@@ -9,7 +10,7 @@ import {
 
 interface DiscountFiltersProps {
   params: DiscountListParams;
-  onChange: (params: DiscountListParams) => void;
+  onChange: (updater: (prev: DiscountListParams) => DiscountListParams) => void;
   disabled?: boolean;
 }
 
@@ -18,27 +19,35 @@ export function DiscountFilters({ params, onChange, disabled }: DiscountFiltersP
     params.search?.trim() || params.kind || params.scope || params.active
   );
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...params, search: e.target.value, page: 1 });
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    onChange((prev) => ({ ...prev, search: value, page: 1 }));
   };
 
-  const handleKindChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...params, kind: e.target.value || undefined, page: 1 });
+  const handleKindChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    onChange((prev) => ({ ...prev, kind: value || undefined, page: 1 }));
   };
 
-  const handleScopeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...params, scope: e.target.value || undefined, page: 1 });
+  const handleScopeChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    onChange((prev) => ({ ...prev, scope: value || undefined, page: 1 }));
   };
 
-  const handleActiveChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...params, active: e.target.value || undefined, page: 1 });
+  const handleActiveChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    onChange((prev) => ({ ...prev, active: value || undefined, page: 1 }));
   };
 
   const handleClear = () => {
-    onChange({
+    onChange((prev) => ({
+      ...prev,
+      search: '',
+      kind: '',
+      scope: '',
+      active: '',
       page: 1,
-      page_size: params.page_size,
-    });
+    }));
   };
 
   return (
@@ -60,14 +69,14 @@ export function DiscountFilters({ params, onChange, disabled }: DiscountFiltersP
           value={params.kind || ''}
           onChange={handleKindChange}
           disabled={disabled}
-          options={[
-            { label: 'All Types', value: '' },
-            ...DISCOUNT_KINDS.map((kind) => ({
-              label: DISCOUNT_KIND_LABELS[kind],
-              value: kind,
-            })),
-          ]}
-        />
+        >
+          <option value="">All Types</option>
+          {DISCOUNT_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {DISCOUNT_KIND_LABELS[kind]}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <div className="w-full md:w-48">
@@ -76,14 +85,14 @@ export function DiscountFilters({ params, onChange, disabled }: DiscountFiltersP
           value={params.scope || ''}
           onChange={handleScopeChange}
           disabled={disabled}
-          options={[
-            { label: 'All Scopes', value: '' },
-            ...DISCOUNT_SCOPES.map((scope) => ({
-              label: DISCOUNT_SCOPE_LABELS[scope],
-              value: scope,
-            })),
-          ]}
-        />
+        >
+          <option value="">All Scopes</option>
+          {DISCOUNT_SCOPES.map((scope) => (
+            <option key={scope} value={scope}>
+              {DISCOUNT_SCOPE_LABELS[scope]}
+            </option>
+          ))}
+        </Select>
       </div>
 
       <div className="w-full md:w-40">
@@ -92,12 +101,11 @@ export function DiscountFilters({ params, onChange, disabled }: DiscountFiltersP
           value={params.active || ''}
           onChange={handleActiveChange}
           disabled={disabled}
-          options={[
-            { label: 'All Statuses', value: '' },
-            { label: 'Active', value: 'true' },
-            { label: 'Inactive', value: 'false' },
-          ]}
-        />
+        >
+          <option value="">All Statuses</option>
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </Select>
       </div>
 
       {hasActiveFilters && (

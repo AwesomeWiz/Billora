@@ -65,7 +65,7 @@ export function DiscountsPage() {
       <PageHeader
         title="Discounts & Promotion Rules"
         description="Manage promotional pricing, fixed and percentage discounts, product or subscription scopes, and threshold policies."
-        actions={
+        action={
           isAdmin ? (
             <Button
               variant="primary"
@@ -93,9 +93,8 @@ export function DiscountsPage() {
           </div>
           <Button
             variant="ghost"
-            size="sm"
             onClick={() => void refresh()}
-            className="text-amber-900 hover:bg-amber-100/80 border border-amber-300 w-fit shrink-0 text-xs"
+            className="text-amber-900 hover:bg-amber-100/80 border border-amber-300 w-fit shrink-0 text-xs h-7 px-2.5"
           >
             Retry Connection
           </Button>
@@ -112,13 +111,13 @@ export function DiscountsPage() {
       {/* Content Rendering */}
       {loading && discounts.length === 0 ? (
         <div className="bg-white p-6 rounded-lg border border-[#E2E8F0] shadow-sm">
-          <LoadingSkeleton rows={5} />
+          <LoadingSkeleton lines={5} />
         </div>
       ) : error && !isEndpointUnavailable ? (
         <div className="bg-white p-6 rounded-lg border border-[#E2E8F0] shadow-sm">
           <ErrorState
             title="Failed to Load Discounts"
-            message={error}
+            description={error}
             onRetry={() => void refresh()}
           />
         </div>
@@ -135,7 +134,7 @@ export function DiscountsPage() {
             }
             action={
               hasFilterActive ? (
-                <Button variant="ghost" onClick={() => setParams({ page: 1 })}>
+                <Button variant="ghost" onClick={() => setParams((prev) => ({ ...prev, page: 1, search: '', kind: '', scope: '', active: '' }))}>
                   Clear Filters
                 </Button>
               ) : isAdmin ? (

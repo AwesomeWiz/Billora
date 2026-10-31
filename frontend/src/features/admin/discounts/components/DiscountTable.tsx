@@ -155,7 +155,6 @@ export function DiscountTable({
                   <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => onEdit(discount)}
                       className="text-xs h-7 px-2.5"
                     >
@@ -163,7 +162,6 @@ export function DiscountTable({
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => onToggleActive(discount)}
                       disabled={isToggling}
                       className={`text-xs h-7 px-2.5 ${
