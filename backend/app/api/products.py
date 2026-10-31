@@ -8,6 +8,7 @@ from ..models.product import Product
 from ..models.product_variant import ProductVariant
 from ..schemas.product import (
     ProductCreate,
+    ProductUpdate,
     ProductOut,
     VariantCreate,
     VariantOut,
@@ -43,22 +44,31 @@ async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return ProductOut.from_orm(prod)
 
+
 @router.patch("/{product_id}", response_model=ProductOut)
 async def update_product(
     product_id: str,
-    payload: ProductCreate,
+    payload: ProductUpdate,
     user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     require_role(user, "ADMIN", "STAFF")
+
     prod = await db.get(Product, product_id)
     if not prod:
         raise HTTPException(status_code=404, detail="Product not found")
-    for field, value in payload.dict().items():
+
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided to update")
+
+    for field, value in updates.items():
         setattr(prod, field, value)
+
     await db.commit()
     await db.refresh(prod)
-    return ProductOut.from_orm(prod)
+    return ProductOut.model_validate(prod)
+
 
 # ------------------------------------------------------------------
 # Variant endpoints

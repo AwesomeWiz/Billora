@@ -3,7 +3,7 @@ from ..models.user_session import UserSession
 from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
+from sqlalchemy import func, select
 from ..core.db import AsyncSessionLocal
 from ..core.security import hash_password, verify_password, generate_session_token, hash_token, token_expiry
 from ..models.account import Account, Role
@@ -37,7 +37,9 @@ async def get_csrf(response: Response, csrf: str = Cookie(None, alias=CSRF_COOKI
 @router.post("/register", response_model=RegisterOut, dependencies=[Depends(verify_csrf)])
 async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
     email_norm = payload.email.lower()
-    existing = await db.scalar(Account.__table__.select().where(Account.email == email_norm))
+    existing = await db.scalar(
+    select(Account).where(Account.email == email_norm)
+)
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
     acct = Account(email=email_norm, role=Role.CUSTOMER)
@@ -51,10 +53,14 @@ async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=LoginOut, dependencies=[Depends(verify_csrf)])
 async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends(get_db)):
-    acct = await db.scalar(Account.__table__.select().where(Account.email == payload.email.lower()))
+    acct = await db.scalar(
+    select(Account).where(Account.email == payload.email.lower())
+)
     if not acct:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    user = await db.scalar(User.__table__.select().where(User.account_id == acct.id))
+    user = await db.scalar(
+    select(User).where(User.account_id == acct.id)
+)
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     raw = generate_session_token()
@@ -69,12 +75,12 @@ async def get_current_user(token: str = Cookie(None, alias=SESSION_COOKIE), db: 
         raise HTTPException(status_code=401, detail="Missing session token")
     token_h = hash_token(token)
     sess = await db.scalar(
-        UserSession.__table__.select().where(
-            UserSession.token_hash == token_h,
-            UserSession.expires_at > func.now(),
-            UserSession.is_revoked == False,
-        )
+    select(UserSession).where(
+        UserSession.token_hash == token_h,
+        UserSession.expires_at > func.now(),
+        UserSession.is_revoked.is_(False),
     )
+)
     if not sess:
         raise HTTPException(status_code=401, detail="Invalid or expired session")
     user = await db.get(User, sess.user_id)
