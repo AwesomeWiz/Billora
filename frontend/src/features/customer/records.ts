@@ -42,7 +42,7 @@ type Resource<T> = { key: string; status: 'loading' } | { key: string; status: '
 export function useRecordResource<T>(key: string, load: (signal: AbortSignal) => Promise<T>) {
   const [resource, setResource] = useState<Resource<T>>({ key, status: 'loading' });
   const [version, setVersion] = useState(0);
-  const reload = useCallback(() => setVersion(value => value + 1), []);
+  const reload = useCallback(() => { setResource({ key, status: 'loading' }); setVersion(value => value + 1); }, [key]);
   useEffect(() => {
     const controller = new AbortController();
     setResource({ key, status: 'loading' });

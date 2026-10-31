@@ -1,5 +1,5 @@
 import { api } from '../../lib/api';
-import { currency, identifier, parsePage, record, text } from './records';
+import { currency, identifier, invalidRecord, parsePage, record, text } from './records';
 
 export interface CustomerAccount { id: string; display_name: string; billing_email: string; billing_address?: string | null; currency: string }
 /** Architecture §4.2, not the unfinished auth Account ORM shape. No email/name aliases are guessed. */
@@ -10,5 +10,8 @@ export function parseCustomer(value: unknown): CustomerAccount {
 }
 export const customerApi = {
   async list(query: string, signal?: AbortSignal) { return parsePage(await api.get<unknown>(`/accounts?${query}`, { signal }), parseCustomer); },
-  async detail(id: string, signal?: AbortSignal) { return parseCustomer(await api.get<unknown>(`/accounts/${identifier(id)}`, { signal })); },
+  async detail(id: string, signal?: AbortSignal) {
+    const account = parseCustomer(await api.get<unknown>(`/accounts/${identifier(id)}`, { signal }));
+    return account.id === id ? account : invalidRecord();
+  },
 };

@@ -52,6 +52,15 @@ describe('subscription list', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
     expect(fetcher.mock.calls.at(-1)?.[0]).toContain('page=2');
   });
+  it('applies typed customer IDs on search instead of requesting on every keypress', async () => {
+    const fetcher = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => json(page()));
+    open(); await screen.findByRole('link', { name: 'SUB-000001' });
+    await userEvent.type(screen.getByLabelText('Customer account ID'), 'account-2');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await screen.findByRole('link', { name: 'SUB-000001' });
+    expect(fetcher.mock.calls.at(-1)?.[0]).toContain('customer_id=account-2');
+  });
   it('does not invent missing amounts, intervals, or dates', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(json(page([{ ...subscription, recurring_amount_minor: undefined, billing_interval: undefined, next_billing_date: null }])));
     open(); await screen.findByRole('link', { name: 'SUB-000001' });

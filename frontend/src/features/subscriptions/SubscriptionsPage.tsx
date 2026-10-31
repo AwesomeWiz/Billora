@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button, EmptyState, Input, Money, PageHeader, Select, StatusBadge } from '../../components/ui';
 import { formatDate } from '../../lib/format';
@@ -11,6 +11,8 @@ export function SubscriptionsPage() {
   const search = params.get('search') ?? '';
   const status = params.get('status') ?? '';
   const customerId = params.get('customer_id') ?? '';
+  const [customerDraft, setCustomerDraft] = useState(customerId);
+  useEffect(() => setCustomerDraft(customerId), [customerId]);
   const query = new URLSearchParams({ page: String(pageNumber(params.get('page'))), page_size: String(pageSize(params.get('page_size'))), sort: 'created_at_desc' });
   if (search.trim()) query.set('search', search.trim());
   if (subscriptionStatuses.includes(status as typeof subscriptionStatuses[number])) query.set('status', status);
@@ -21,15 +23,25 @@ export function SubscriptionsPage() {
   function change(name: string, value: string) {
     setParams(previous => { const next = new URLSearchParams(previous); if (value) next.set(name, value); else next.delete(name); if (name !== 'page') next.delete('page'); return next; });
   }
+  function searchRecords(value: string) {
+    setParams(previous => {
+      const next = new URLSearchParams(previous);
+      for (const [name, filter] of [['search', value], ['customer_id', customerDraft.trim()]]) {
+        if (filter) next.set(name, filter); else next.delete(name);
+      }
+      next.delete('page');
+      return next;
+    });
+  }
   const data = resource.status === 'ready' ? resource.data : null;
   return <>
     <PageHeader title="Subscriptions" description="Every agreement, its current status, and the next billing date." />
     <section className="card" aria-label="Subscription records">
-      <SearchRecords search={search} label="Search subscriptions" onSearch={value => change('search', value)}>
+      <SearchRecords search={search} label="Search subscriptions" onSearch={searchRecords}>
         <Select label="Subscription status" value={subscriptionStatuses.includes(status as typeof subscriptionStatuses[number]) ? status : ''} onChange={event => change('status', event.target.value)}>
           <option value="">All statuses</option>{subscriptionStatuses.map(value => <option key={value} value={value}>{value.charAt(0) + value.slice(1).toLowerCase()}</option>)}
         </Select>
-        <Input label="Customer account ID" value={customerId} maxLength={100} onChange={event => change('customer_id', event.target.value)} placeholder="Filter by account ID" />
+        <Input label="Customer account ID" value={customerDraft} maxLength={100} onChange={event => setCustomerDraft(event.target.value)} placeholder="Filter by account ID" />
       </SearchRecords>
       <p className="record-note">Amounts are server-provided recurring charges, not collected revenue. Account and plan IDs identify records when name projections are unavailable.</p>
       {(search || status || customerId) && <div className="record-padding"><Button variant="ghost" onClick={() => setParams({})}>Clear filters</Button></div>}

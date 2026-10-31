@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { EmptyState, Money, PageHeader, StatusBadge } from '../../components/ui';
 import { formatDate } from '../../lib/format';
@@ -6,6 +6,7 @@ import { customerApi } from '../customer/api';
 import { RecordError, RecordsLoading, RecordTable, UnavailableSection } from '../customer/RecordViews';
 import { invalidRecord, useRecordResource } from '../customer/records';
 import { subscriptionDetailApi, type SubscriptionDetail } from './detail-api';
+import { LifecycleActions } from './LifecycleActions';
 
 function CustomerRelationship({ accountId }: { accountId: string }) {
   const load = useCallback(async (signal: AbortSignal) => {
@@ -20,7 +21,7 @@ function CustomerRelationship({ accountId }: { accountId: string }) {
   </section>;
 }
 
-function PlanRelationship({ subscription }: { subscription: SubscriptionDetail }) {
+function PlanRelationship({ subscription, onConfirmed, onRefresh }: { subscription: SubscriptionDetail; onConfirmed: (value: SubscriptionDetail) => void; onRefresh: () => void }) {
   const load = useCallback(async (signal: AbortSignal) => {
     const plan = await subscriptionDetailApi.plan(subscription.plan_id, signal);
     return plan.id === subscription.plan_id ? plan : invalidRecord();
@@ -32,11 +33,13 @@ function PlanRelationship({ subscription }: { subscription: SubscriptionDetail }
     {resource.status === 'ready' && <dl className="record-summary"><div><dt>Plan name</dt><dd>{resource.data.name}</dd></div><div><dt>Billing interval</dt><dd>{resource.data.billing_interval.charAt(0) + resource.data.billing_interval.slice(1).toLowerCase()}</dd></div>
       <div><dt>Pause policy</dt><dd>{resource.data.can_pause === undefined ? 'Not provided' : resource.data.can_pause ? 'Permitted by plan' : 'Not permitted'}</dd></div><div><dt>Renewal policy</dt><dd>{resource.data.can_renew === undefined ? 'Not provided' : resource.data.can_renew ? 'Permitted by plan' : 'Not permitted'}</dd></div>
     </dl>}
-    <p className="record-note">Lifecycle controls require a verified plan policy and a supported transition contract.</p>
+    {resource.status === 'ready' && <LifecycleActions subscription={subscription} plan={resource.data} onConfirmed={onConfirmed} onRefresh={onRefresh} />}
+    {resource.status !== 'ready' && <p className="record-note">Lifecycle controls are unavailable until the plan policy can be verified.</p>}
   </section>;
 }
 
 function SubscriptionRecord({ id }: { id: string }) {
+  const [notice, setNotice] = useState<string | null>(null);
   const load = useCallback(async (signal: AbortSignal) => {
     const subscription = await subscriptionDetailApi.detail(id, signal);
     return subscription.id === id ? subscription : invalidRecord();
@@ -47,17 +50,18 @@ function SubscriptionRecord({ id }: { id: string }) {
     <PageHeader title={subscription?.number ?? 'Subscription details'} description="Agreed charges, billing dates, and subscription policy."
       breadcrumbs={[{ label: 'Subscriptions', href: '/app/subscriptions' }, { label: subscription?.number ?? 'Details' }]}
       action={subscription ? <StatusBadge status={subscription.status} domain="subscription" /> : undefined} />
+    {notice && <div className="notice notice-success" role="status">{notice}</div>}
     {resource.status === 'loading' && <RecordsLoading label="Loading subscription details" />}
     {resource.status === 'error' && <RecordError error={resource.error} retry={reload} />}
     {subscription && <div className="record-sections">
       <section className="card"><div className="card-header"><h2>Agreement and billing schedule</h2><span className="subtle-label">{subscription.currency}</span></div>
         <dl className="record-summary"><div><dt>Start date</dt><dd>{subscription.start_date ? formatDate(subscription.start_date) : 'Not provided'}</dd></div><div><dt>Expiry date</dt><dd>{subscription.expiry_date ? formatDate(subscription.expiry_date) : 'No expiry provided'}</dd></div>
-          <div><dt>Next billing date</dt><dd>{subscription.next_billing_date ? formatDate(subscription.next_billing_date) : 'Not scheduled'}</dd></div><div><dt>Payment terms</dt><dd>{subscription.payment_term_days === undefined ? 'Not provided' : subscription.payment_term_days === 0 ? 'Due on issue' : `${subscription.payment_term_days} days from issue`}</dd></div>
+          <div><dt>Next billing date</dt><dd>{subscription.next_billing_date ? formatDate(subscription.next_billing_date) : 'Not scheduled'}</dd></div><div><dt>Payment terms</dt><dd>{subscription.payment_term_days === undefined ? 'Not provided' : `${subscription.payment_term_days} days`}</dd></div>
           <div><dt>Recurring amount</dt><dd>{subscription.recurring_amount_minor === undefined ? 'Not provided by the service' : <Money amountMinor={subscription.recurring_amount_minor} currency={subscription.currency} />}</dd></div><div><dt>Subscription ID</dt><dd>{subscription.id}</dd></div>
         </dl>
       </section>
       <CustomerRelationship accountId={subscription.account_id} />
-      <PlanRelationship subscription={subscription} />
+      <PlanRelationship subscription={subscription} onRefresh={() => { setNotice(null); reload(); }} onConfirmed={updated => { setNotice(`The server confirmed ${updated.number} as ${updated.status.toLowerCase()}.`); reload(); }} />
       <section className="card"><div className="card-header"><div><h2>Agreed product lines</h2><p className="muted">Contract unit prices, without recalculating invoice totals.</p></div></div>
         {subscription.lines === undefined ? <EmptyState title="Product lines unavailable" description="The detail API has not supplied agreed line items. Current catalog prices are not substituted." />
           : subscription.lines.length === 0 ? <EmptyState title="No product lines" description="The service returned no product lines for this agreement. Any separate plan fee is determined by the server." />
