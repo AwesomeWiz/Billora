@@ -6,6 +6,7 @@ import { AuthProvider } from '../features/auth/AuthProvider';
 import { api, ApiError } from '../lib/api';
 import { authService } from '../features/auth/service';
 import { routeConfig } from '../app/router';
+import { reportJson, reportSummary } from './report-fixtures';
 
 const internal = { user: { id: 'admin-1', email: 'admin@example.test', role: 'ADMIN' as const, account_id: null }, csrf_token: 'test-csrf' };
 const customer = { user: { id: 'customer-1', email: 'customer@example.test', role: 'CUSTOMER' as const, account_id: 'account-1' }, csrf_token: 'test-csrf' };
@@ -16,7 +17,10 @@ function open(path: string) {
   return router;
 }
 
-beforeEach(() => api.setCsrfToken(null));
+beforeEach(() => {
+  api.setCsrfToken(null);
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => reportJson(reportSummary));
+});
 
 describe('protected routing and honest integration states', () => {
   it('keeps the shell hidden until the server session resolves', async () => {

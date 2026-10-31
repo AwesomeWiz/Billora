@@ -6,6 +6,7 @@ import { routeConfig } from '../app/router';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { authService } from '../features/auth/service';
 import { ApiError } from '../lib/api';
+import { reportJson, reportSummary } from './report-fixtures';
 
 const path = '/app/catalog/products';
 const session = {
@@ -21,7 +22,7 @@ function open(initialPath = path) {
 
 beforeEach(() => {
   vi.spyOn(authService, 'session').mockResolvedValue(session);
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async input => String(input) === '/api/reports/summary' ? reportJson(reportSummary) : new Response(
     JSON.stringify({ items: [], total: 0, page: 1, page_size: 20, has_next: false }),
     { headers: { 'Content-Type': 'application/json' } },
   ));

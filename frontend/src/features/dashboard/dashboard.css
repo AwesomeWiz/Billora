@@ -1,0 +1,23 @@
+/* Reporting layouts reuse Billora tokens, controls, cards and integer money formatting. */
+.finance-section-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; }
+.finance-section-heading h2 { font-size: 16px; }
+.finance-section-heading p { font-size: 13px; margin-top: 6px; }
+.finance-report-period, .finance-scope-note { color: var(--text-muted); font-size: 12px; margin-top: 16px; }
+.finance-report-period { font-variant-numeric: tabular-nums; }
+.finance-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.finance-metrics .metric-value { font-size: clamp(20px, 2vw, 28px); overflow-wrap: anywhere; }
+.finance-workspace-links { margin-top: 28px; }
+.finance-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.finance-shortcuts a { display: flex; align-items: flex-start; gap: 12px; padding: 24px; min-width: 0; text-decoration: none; }
+.finance-shortcuts a:hover { background: var(--bg); }
+.finance-shortcuts a > svg { flex-shrink: 0; }
+.finance-shortcuts span { flex: 1; min-width: 0; }
+.finance-shortcuts strong { display: block; font-size: 13px; font-weight: 550; }
+.finance-shortcuts small { display: block; color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+@media (max-width: 1000px) {
+  .finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .finance-shortcuts { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .finance-metrics { grid-template-columns: 1fr; }
+}
