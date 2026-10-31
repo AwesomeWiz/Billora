@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { Button, Input, Money, StatusBadge, LoadingSkeleton } from '../../../../components/ui';
+import { formatMoney } from '../../../../lib/format';
 import { productService } from '../services/productService';
 import {
   calculateResolvedPrice,
@@ -325,6 +326,7 @@ export function VariantManagerModal({
           {isFormOpen && (
             <form
               onSubmit={handleFormSubmit}
+              noValidate
               style={{
                 padding: '20px',
                 backgroundColor: 'var(--surface)',
@@ -404,7 +406,10 @@ export function VariantManagerModal({
                     <Money amountMinor={parsedFormDelta} currency={currency} /> (Adjustment)
                   </span>
                 </span>
-                <strong style={{ color: 'var(--primary)', fontSize: '13px' }}>
+                <strong
+                  data-testid="live-resolved-preview"
+                  style={{ color: 'var(--primary)', fontSize: '13px' }}
+                >
                   = <Money amountMinor={previewResolvedPrice} currency={currency} />
                 </strong>
               </div>
@@ -517,8 +522,10 @@ export function VariantManagerModal({
                             color: isPositiveDelta ? 'var(--text)' : 'var(--danger)',
                           }}
                         >
-                          {isPositiveDelta ? '+' : ''}
-                          <Money amountMinor={v.price_delta_minor} currency={currency} />
+                          <span className="tabular-nums">
+                            {isPositiveDelta ? '+' : ''}
+                            {formatMoney(v.price_delta_minor, currency)}
+                          </span>
                         </td>
                         <td
                           style={{

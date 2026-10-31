@@ -223,7 +223,7 @@ export function ProductFormModal({ isOpen, onClose, onSubmit, product }: Product
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+        <form onSubmit={handleSubmit} noValidate style={{ padding: '24px' }}>
           {serverError && (
             <div className="notice notice-error" role="alert" style={{ marginBottom: '16px' }}>
               <strong>Could not save product</strong>
