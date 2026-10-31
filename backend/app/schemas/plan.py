@@ -1,17 +1,18 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, model_validator
+from .admin_common import AdminInput, Minor, Name, Currency, Page
 
 BillingInterval = Literal["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]
 
 
-class PlanBase(BaseModel):
-    name: str = Field(min_length=1, max_length=120)
-    base_fee_minor: int = Field(default=0, ge=0)
-    currency: str = Field(default="INR", min_length=3, max_length=3)
+class PlanBase(AdminInput):
+    name: Name
+    base_fee_minor: Minor = 0
+    currency: Currency = "INR"
     bill_plan_base_fee: bool = False
     billing_interval: BillingInterval = "MONTHLY"
-    min_quantity: int = Field(default=1, ge=1)
+    min_quantity: int = Field(default=1, ge=1, le=9007199254740991, strict=True)
     available_from: date
     available_to: Optional[date] = None
     auto_close: bool = True
@@ -31,13 +32,13 @@ class PlanCreate(PlanBase):
     pass
 
 
-class PlanUpdate(BaseModel):
-    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
-    base_fee_minor: Optional[int] = Field(default=None, ge=0)
-    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+class PlanUpdate(AdminInput):
+    name: Name | None = None
+    base_fee_minor: Minor | None = None
+    currency: Currency | None = None
     bill_plan_base_fee: Optional[bool] = None
     billing_interval: Optional[BillingInterval] = None
-    min_quantity: Optional[int] = Field(default=None, ge=1)
+    min_quantity: Optional[int] = Field(default=None, ge=1, le=9007199254740991, strict=True)
     available_from: Optional[date] = None
     available_to: Optional[date] = None
     auto_close: Optional[bool] = None
@@ -58,3 +59,8 @@ class PlanUpdate(BaseModel):
 class PlanOut(PlanBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+PlanPage = Page[PlanOut]

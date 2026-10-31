@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, Column, Date, Integer, String
+from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String, func
 from ..core.db import Base
 
 
@@ -20,3 +20,5 @@ class Plan(Base):
     can_renew = Column(Boolean, nullable=False, default=True)
     can_close_early = Column(Boolean, nullable=False, default=True)
     active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=func.now(), server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, default=func.now(), server_default=func.now(), onupdate=func.now())

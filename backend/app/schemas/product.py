@@ -1,16 +1,16 @@
+from datetime import datetime
+from pydantic import ConfigDict
+from .admin_common import AdminInput, Name, Minor, SignedMinor, Currency, Page
 
-# backend/app/schemas/product.py
 
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
-
-class ProductBase(BaseModel):
-    name: str
-    type: str
-    sales_price_minor: int = Field(..., gt=0)
-    cost_price_minor: int = Field(..., gt=0)
-    currency: str = "INR"
-    notes: Optional[str] = None
+class ProductBase(AdminInput):
+    name: Name
+    # Retain legacy type strings; new frontend uses SOFTWARE/SERVICE/HARDWARE/OTHER.
+    type: Name
+    sales_price_minor: Minor
+    cost_price_minor: Minor
+    currency: Currency = "INR"
+    notes: str | None = None
     active: bool = True
 
 
@@ -18,32 +18,57 @@ class ProductCreate(ProductBase):
     pass
 
 
-class ProductUpdate(BaseModel):
-    name: Optional[str] = None
-    type: Optional[str] = None
-    sales_price_minor: Optional[int] = Field(default=None, gt=0)
-    cost_price_minor: Optional[int] = Field(default=None, gt=0)
-    currency: Optional[str] = None
-    notes: Optional[str] = None
-    active: Optional[bool] = None
+class ProductUpdate(AdminInput):
+    name: Name | None = None
+    type: Name | None = None
+    sales_price_minor: Minor | None = None
+    cost_price_minor: Minor | None = None
+    currency: Currency | None = None
+    notes: str | None = None
+    active: bool | None = None
 
 
 class ProductOut(ProductBase):
     model_config = ConfigDict(from_attributes=True)
     id: str
+    created_at: datetime
+    updated_at: datetime
+    variant_count: int = 0
 
 
-class VariantBase(BaseModel):
-    name: str
-    price_adjust_minor: int = Field(..., gt=0)
-    notes: Optional[str] = None
-class VariantCreate(VariantBase):
+ProductPage = Page[ProductOut]
+
+
+class VariantCreate(AdminInput):
+    """Legacy route input retained for existing callers."""
     product_id: str
+    name: Name
+    price_adjust_minor: SignedMinor
+    notes: str | None = None
 
-class VariantOut(VariantBase):
+
+class NestedVariantCreate(AdminInput):
+    attribute_name: Name
+    attribute_value: Name
+    price_delta_minor: SignedMinor
+    active: bool = True
+
+
+class VariantUpdate(AdminInput):
+    attribute_name: Name | None = None
+    attribute_value: Name | None = None
+    price_delta_minor: SignedMinor | None = None
+    active: bool | None = None
+
+
+class NestedVariantOut(NestedVariantCreate):
     model_config = ConfigDict(from_attributes=True)
     id: str
     product_id: str
+    created_at: datetime
 
 
-
+class VariantOut(NestedVariantOut):
+    name: str
+    price_adjust_minor: int
+    notes: str | None = None
