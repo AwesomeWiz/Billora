@@ -38,8 +38,11 @@ describe('products module integration', () => {
     expect(within(navigation).getByRole('link', { name: 'Products & Variants' })).toHaveAttribute('aria-current', 'page');
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/products', expect.objectContaining({ method: 'GET', credentials: 'include' }));
     if (role === 'ADMIN') {
-      expect(within(navigation).getByText('Plans').closest('[aria-disabled]')).toHaveAttribute('aria-disabled', 'true');
-      expect(within(navigation).queryByRole('link', { name: /Plans/ })).not.toBeInTheDocument();
+      expect(within(navigation).getByRole('link', { name: 'Plans' })).toHaveAttribute('href', '/app/catalog/plans');
+      for (const label of ['Taxes & discounts', 'Staff']) {
+        expect(within(navigation).getByText(label).closest('[aria-disabled]')).toHaveAttribute('aria-disabled', 'true');
+        expect(within(navigation).queryByRole('link', { name: label })).not.toBeInTheDocument();
+      }
     }
   });
 
