@@ -40,7 +40,9 @@ export function TemplateTable({ templates, onView }: TemplateTableProps) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-[#475569]">
-                  <span className="font-semibold text-[#0F172A]">{lineCount}</span> {lineCount === 1 ? 'product line' : 'product lines'}
+                  <span className="font-semibold text-[#0F172A]">
+                    {lineCount} {lineCount === 1 ? 'product line' : 'product lines'}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-[#475569]">
                   <span className="font-medium text-[#0F172A]">{tpl.validity_days} days</span>

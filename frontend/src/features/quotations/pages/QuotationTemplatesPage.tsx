@@ -37,7 +37,6 @@ export function QuotationTemplatesPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [variantsByProductId, setVariantsByProductId] = useState<Record<string, ProductVariant[]>>({});
   const [taxes, setTaxes] = useState<TaxRule[]>([]);
-  const [loadingDependencies, setLoadingDependencies] = useState(false);
 
   // Modals
   const [isCreating, setIsCreating] = useState(false);
@@ -46,7 +45,6 @@ export function QuotationTemplatesPage() {
   useEffect(() => {
     let mounted = true;
     async function loadCatalogData() {
-      setLoadingDependencies(true);
       try {
         const [plansRes, productsRes] = await Promise.all([
           planService.listPlans({ page_size: 100 }).catch(() => ({ items: [] })),
@@ -82,10 +80,8 @@ export function QuotationTemplatesPage() {
             setVariantsByProductId(variantMap);
           }
         }
-      } finally {
-        if (mounted) {
-          setLoadingDependencies(false);
-        }
+      } catch {
+        // catalog dependencies unavailable
       }
     }
 
