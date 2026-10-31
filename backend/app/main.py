@@ -15,10 +15,8 @@ app = FastAPI(
 )
 
 # Register routers
-app.include_router(auth_router)
-app.include_router(products_router)
-
-# Health endpoint
+app.include_router(auth_router, prefix=settings.api_prefix)
+app.include_router(products_router, prefix=settings.api_prefix)# Health endpoint
 @app.get(f"{settings.api_prefix}/health")
 async def health():
     return {"status": "ok"}

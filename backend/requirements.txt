@@ -7,3 +7,5 @@ argon2-cffi
 pytest
 httpx
 email-validator
+aiosqlite
+pytest-asyncio

@@ -1,5 +1,7 @@
 # backend/app/api/auth.py
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header, JSONResponse
+from ..models.user_session import UserSession
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func
 from ..core.db import AsyncSessionLocal
