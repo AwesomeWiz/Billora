@@ -1,22 +1,39 @@
 # backend/app/api/auth.py
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from ..core.db import AsyncSessionLocal
 from ..core.security import hash_password, verify_password, generate_session_token, hash_token, token_expiry
 from ..models.account import Account, Role
 from ..models.user import User
-from ..models.user_session import UserSession
-from ..schemas.auth import RegisterIn, RegisterOut, LoginIn, LoginOut
+import secrets
+
+from ..schemas.auth import RegisterIn, RegisterOut, LoginIn, LoginOut, CsrfOut
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+SESSION_COOKIE = "session_token"
+CSRF_COOKIE = "csrf_token"
+COOKIE_MAX_AGE = 3600
 
 async def get_db() -> AsyncSession:
     async with AsyncSessionLocal() as db:
         yield db
 
-@router.post("/register", response_model=RegisterOut)
+def verify_csrf(csrf_header: str = Header(..., alias="X-CSRF-Token"), csrf_cookie: str = Cookie(None, alias=CSRF_COOKIE)):
+    if not csrf_cookie or csrf_header != csrf_cookie:
+        raise HTTPException(status_code=403, detail="Invalid CSRF token")
+    return True
+
+@router.get("/csrf", response_model=CsrfOut)
+async def get_csrf(response: Response, csrf: str = Cookie(None, alias=CSRF_COOKIE)):
+    if not csrf:
+        csrf = secrets.token_urlsafe(32)
+    response.set_cookie(key=CSRF_COOKIE, value=csrf, httponly=False, samesite="lax", max_age=COOKIE_MAX_AGE)
+    return {"csrf_token": csrf}
+
+@router.post("/register", response_model=RegisterOut, dependencies=[Depends(verify_csrf)])
 async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
-    # normalize email
     email_norm = payload.email.lower()
     existing = await db.scalar(Account.__table__.select().where(Account.email == email_norm))
     if existing:
@@ -30,7 +47,7 @@ async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
     await db.commit()
     return RegisterOut(account_id=acct.id, user_id=user.id, role=acct.role)
 
-@router.post("/login", response_model=LoginOut)
+@router.post("/login", response_model=LoginOut, dependencies=[Depends(verify_csrf)])
 async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends(get_db)):
     acct = await db.scalar(Account.__table__.select().where(Account.email == payload.email.lower()))
     if not acct:
@@ -39,17 +56,13 @@ async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     raw = generate_session_token()
-    sess = UserSession(
-        user_id=user.id,
-        token_hash=hash_token(raw),
-        expires_at=token_expiry(),
-    )
+    sess = UserSession(user_id=user.id, token_hash=hash_token(raw), expires_at=token_expiry())
     db.add(sess)
     await db.commit()
-    response.set_cookie(key="session_token", value=raw, httponly=True, samesite="lax", max_age=3600)
-    return LoginOut(access_token=raw)
+    response.set_cookie(key=SESSION_COOKIE, value=raw, httponly=True, samesite="lax", max_age=COOKIE_MAX_AGE)
+    return LoginOut(detail="logged in")
 
-async def get_current_user(token: str = Cookie(None), db: AsyncSession = Depends(get_db)):
+async def get_current_user(token: str = Cookie(None, alias=SESSION_COOKIE), db: AsyncSession = Depends(get_db)):
     if not token:
         raise HTTPException(status_code=401, detail="Missing session token")
     token_h = hash_token(token)
@@ -67,12 +80,12 @@ async def get_current_user(token: str = Cookie(None), db: AsyncSession = Depends
     return {"user": user, "account": account}
 
 @router.get("/me")
-async def me(info: dict = Depends(get_current_user)):
+async def me(info: dict = Depends(get_current_user), csrf: str = Cookie(None, alias=CSRF_COOKIE)):
     acct = info["account"]
-    return {"account_id": acct.id, "email": acct.email, "role": acct.role}
+    return {"user": {"account_id": acct.id, "email": acct.email, "role": acct.role}, "csrf_token": csrf}
 
-@router.post("/logout")
-async def logout(response: Response, token: str = Cookie(None), db: AsyncSession = Depends(get_db)):
+@router.post("/logout", dependencies=[Depends(verify_csrf)])
+async def logout(response: Response, token: str = Cookie(None, alias=SESSION_COOKIE), db: AsyncSession = Depends(get_db)):
     if token:
         token_h = hash_token(token)
         await db.execute(
@@ -81,5 +94,6 @@ async def logout(response: Response, token: str = Cookie(None), db: AsyncSession
             .values(is_revoked=True)
         )
         await db.commit()
-    response.delete_cookie("session_token")
+    response.delete_cookie(SESSION_COOKIE)
+    response.delete_cookie(CSRF_COOKIE)
     return {"detail": "logged out"}

@@ -26,5 +26,7 @@ class LoginIn(BaseModel):
     password: str
 
 class LoginOut(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    detail: str = "logged in"
+
+class CsrfOut(BaseModel):
+    csrf_token: str
