@@ -8,6 +8,7 @@ import { useRecordResource } from '../customer/records';
 import { invoiceDetailApi, type InvoiceDetail } from './invoice-detail-api';
 import { InvoiceLifecycleBadge, InvoicePaymentBadge } from './InvoiceStatus';
 import { InvoiceActions } from './InvoiceActions';
+import { InvoiceDelivery, InvoicePrint } from './InvoiceOutput';
 import './billing.css';
 
 function SnapshotMoney({ amount, currency }: { amount?: number; currency: string }) {
@@ -29,11 +30,12 @@ function InvoiceDocument({ invoice }: { invoice: InvoiceDetail }) {
         <p className="invoice-customer-name">{account?.display_name ?? 'Billing name not provided'}</p>
         <p>{account?.billing_email ?? 'Billing email not provided'}</p>
         <p className="invoice-address">{account?.billing_address ?? 'Billing address not provided'}</p>
-        <Link to={'/app/customers/' + encodeURIComponent(invoice.billing_account_id)}>View current account</Link>
+        <Link className="no-print" to={'/app/customers/' + encodeURIComponent(invoice.billing_account_id)}>View current account</Link>
         <p className="invoice-caption">Billing details above are shown only as supplied with this invoice.</p>
       </section>
       <dl className="invoice-metadata">
         <div><dt>Invoice number</dt><dd>{invoice.number}</dd></div>
+        <div><dt>Invoice state</dt><dd><InvoiceLifecycleBadge invoice={invoice} /></dd></div>
         <div><dt>Issue date</dt><dd><time dateTime={invoice.issued_on}>{formatDate(invoice.issued_on)}</time></dd></div>
         <div><dt>Due date</dt><dd><time dateTime={invoice.due_on}>{formatDate(invoice.due_on)}</time></dd></div>
         <div><dt>Currency</dt><dd>{invoice.currency}</dd></div>
@@ -96,14 +98,14 @@ function InvoiceRecord({ id }: { id: string }) {
   const load = useCallback((signal: AbortSignal) => invoiceDetailApi.detail(id, signal), [id]);
   const { resource, reload } = useRecordResource(id, load);
   const invoice = resource.status === 'ready' ? resource.data : null;
-  return <>
+  return <div className="invoice-detail-page">
     <PageHeader title={invoice?.number ?? 'Invoice details'} description="Invoice snapshots, recorded charges, and settlement information."
       breadcrumbs={[{ label: 'Invoices', href: '/app/invoices' }, { label: invoice?.number ?? 'Details' }]}
       action={invoice ? <InvoiceLifecycleBadge invoice={invoice} /> : undefined} />
     {resource.status === 'loading' && <RecordsLoading label="Loading invoice details" />}
     {resource.status === 'error' && <RecordError error={resource.error} retry={reload} />}
-    {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDocument invoice={invoice} /></>}
-  </>;
+    {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDelivery invoice={invoice} /><InvoicePrint key={invoice.id} invoice={invoice} /><InvoiceDocument invoice={invoice} /></>}
+  </div>;
 }
 
 export function InvoiceDetailPage() { const { id = '' } = useParams(); return <InvoiceRecord key={id} id={id} />; }

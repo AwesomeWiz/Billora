@@ -8,7 +8,14 @@ export interface InvoiceSnapshotLine {
   line_subtotal_minor?: number; discount_minor?: number; tax_bps?: number; tax_minor?: number; total_minor?: number;
 }
 export interface InvoicePayment { id: string; amount_minor: number; method: string; paid_at: string; note?: string }
-export interface InvoiceDetail extends InvoiceSummary { lines?: InvoiceSnapshotLine[]; payments?: InvoicePayment[] }
+export interface InvoiceDetail extends InvoiceSummary { lines?: InvoiceSnapshotLine[]; payments?: InvoicePayment[]; sent_at?: string }
+
+function instant(value: unknown): string {
+  const timestamp = text(value);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp) || Number.isNaN(Date.parse(timestamp))) return invalidInvoice();
+  date(timestamp.slice(0, 10));
+  return timestamp;
+}
 
 function parseLine(value: unknown): InvoiceSnapshotLine {
   const body = record(value);
@@ -33,9 +40,8 @@ function parsePayment(value: unknown, invoiceId: string): InvoicePayment {
   const body = record(value);
   if (body.invoice_id != null && identifier(body.invoice_id) !== invoiceId) return invalidInvoice();
   const amount = minor(body.amount_minor);
-  const paidAt = text(body.paid_at);
-  if (amount <= 0 || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(paidAt) || Number.isNaN(Date.parse(paidAt))) return invalidInvoice();
-  date(paidAt.slice(0, 10));
+  const paidAt = instant(body.paid_at);
+  if (amount <= 0) return invalidInvoice();
   return { id: identifier(body.id), amount_minor: amount, method: text(body.method), paid_at: paidAt, note: optionalText(body.note) };
 }
 
@@ -50,7 +56,8 @@ function optionalItems<T extends { id: string }>(value: unknown, parse: (item: u
 export function parseInvoiceDetail(value: unknown): InvoiceDetail {
   const body = record(value);
   const invoice = parseInvoiceSummary(body);
-  return { ...invoice, lines: optionalItems(body.lines, parseLine), payments: optionalItems(body.payments, payment => parsePayment(payment, invoice.id)) };
+  return { ...invoice, lines: optionalItems(body.lines, parseLine), payments: optionalItems(body.payments, payment => parsePayment(payment, invoice.id)),
+    sent_at: body.sent_at == null ? undefined : instant(body.sent_at) };
 }
 
 export const invoiceDetailApi = {

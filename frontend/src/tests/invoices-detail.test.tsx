@@ -46,7 +46,7 @@ describe('invoice detail snapshots', () => {
     expect(fetcher).toHaveBeenCalledOnce();
     expect(fetcher.mock.calls[0][0]).toBe('/api/invoices/invoice-1');
     expect(fetcher.mock.calls[0][1]?.method).toBe('GET');
-    expect(screen.queryByRole('button', { name: /^(Confirm|Cancel|Send|Record payment)/i })).not.toBeInTheDocument();
+    for (const button of screen.queryAllByRole('button', { name: /^(Confirm|Cancel|Send|Record payment)/i })) expect(button).toBeDisabled();
   });
 
   it('renders recorded payments and the supplied settlement values in the invoice currency', async () => {
