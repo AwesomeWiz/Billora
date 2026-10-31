@@ -1,6 +1,6 @@
 # backend/app/api/auth.py
 from ..models.user_session import UserSession
-from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, Header, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
@@ -27,6 +27,14 @@ def verify_csrf(csrf_header: str = Header(..., alias="X-CSRF-Token"), csrf_cooki
         raise HTTPException(status_code=403, detail="Invalid CSRF token")
     return True
 
+ALLOWED_ORIGINS = {"http://localhost:5173"}
+
+def verify_origin(request: Request):
+    origin = request.headers.get("origin")
+    if origin not in ALLOWED_ORIGINS:
+        raise HTTPException(status_code=403, detail="Origin not allowed")
+    return True
+
 @router.get("/csrf", response_model=CsrfOut)
 async def get_csrf(response: Response, csrf: str = Cookie(None, alias=CSRF_COOKIE)):
     if not csrf:
@@ -34,7 +42,7 @@ async def get_csrf(response: Response, csrf: str = Cookie(None, alias=CSRF_COOKI
     response.set_cookie(key=CSRF_COOKIE, value=csrf, httponly=False, samesite="lax", max_age=COOKIE_MAX_AGE)
     return {"csrf_token": csrf}
 
-@router.post("/register", response_model=RegisterOut, dependencies=[Depends(verify_csrf)])
+@router.post("/register", response_model=RegisterOut, dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
     email_norm = payload.email.lower()
     existing = await db.scalar(
@@ -51,7 +59,7 @@ async def register(payload: RegisterIn, db: AsyncSession = Depends(get_db)):
     await db.commit()
     return RegisterOut(account_id=acct.id, user_id=user.id, role=acct.role)
 
-@router.post("/login", response_model=LoginOut, dependencies=[Depends(verify_csrf)])
+@router.post("/login", response_model=LoginOut, dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def login(payload: LoginIn, response: Response, db: AsyncSession = Depends(get_db)):
     acct = await db.scalar(
     select(Account).where(Account.email == payload.email.lower())
@@ -92,7 +100,7 @@ async def me(info: dict = Depends(get_current_user), csrf: str = Cookie(None, al
     acct = info["account"]
     return {"user": {"account_id": acct.id, "email": acct.email, "role": acct.role}, "csrf_token": csrf}
 
-@router.post("/logout", dependencies=[Depends(verify_csrf)])
+@router.post("/logout", dependencies=[Depends(verify_csrf), Depends(verify_origin)])
 async def logout(response: Response, token: str = Cookie(None, alias=SESSION_COOKIE), db: AsyncSession = Depends(get_db)):
     if token:
         token_h = hash_token(token)

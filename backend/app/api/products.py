@@ -1,6 +1,7 @@
 # backend/app/api/products.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from app.api.auth import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from typing import List, Optional
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.db import AsyncSessionLocal
 from ..core.permissions import require_role
@@ -13,17 +14,29 @@ from ..schemas.product import (
     VariantCreate,
     VariantOut,
 )
+from app.api.auth import get_current_user
 
 router = APIRouter(prefix="/products", tags=["Catalog"])
 
-# Helper to provide a DB session per request
 async def get_db() -> AsyncSession:
-    async with AsyncSessionLocal() as sess:
-        yield sess
+    async with AsyncSessionLocal() as db:
+        yield db
 
-# ------------------------------------------------------------------
-# Product endpoints
-# ------------------------------------------------------------------
+@router.get("/", response_model=List[ProductOut])
+async def list_products(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    name: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Product)
+    if name:
+        stmt = stmt.where(Product.name.ilike(f"%{name.strip()}%"))
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    products = result.scalars().all()
+    return [ProductOut.from_orm(p) for p in products]
+
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 async def create_product(
     payload: ProductCreate,
@@ -31,19 +44,18 @@ async def create_product(
     db: AsyncSession = Depends(get_db),
 ):
     require_role(user, "ADMIN", "STAFF")
-    prod = Product(**payload.dict())
-    db.add(prod)
+    product = Product(**payload.dict())
+    db.add(product)
     await db.commit()
-    await db.refresh(prod)
-    return ProductOut.from_orm(prod)
+    await db.refresh(product)
+    return ProductOut.from_orm(product)
 
 @router.get("/{product_id}", response_model=ProductOut)
 async def get_product(product_id: str, db: AsyncSession = Depends(get_db)):
-    prod = await db.get(Product, product_id)
-    if not prod:
+    product = await db.get(Product, product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return ProductOut.from_orm(prod)
-
+    return ProductOut.from_orm(product)
 
 @router.patch("/{product_id}", response_model=ProductOut)
 async def update_product(
@@ -53,26 +65,19 @@ async def update_product(
     db: AsyncSession = Depends(get_db),
 ):
     require_role(user, "ADMIN", "STAFF")
-
-    prod = await db.get(Product, product_id)
-    if not prod:
+    product = await db.get(Product, product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields provided to update")
-
     for field, value in updates.items():
-        setattr(prod, field, value)
-
+        setattr(product, field, value)
     await db.commit()
-    await db.refresh(prod)
-    return ProductOut.model_validate(prod)
+    await db.refresh(product)
+    return ProductOut.from_orm(product)
 
-
-# ------------------------------------------------------------------
 # Variant endpoints
-# ------------------------------------------------------------------
 @router.post("/variants", response_model=VariantOut, status_code=status.HTTP_201_CREATED)
 async def create_variant(
     payload: VariantCreate,
@@ -80,19 +85,18 @@ async def create_variant(
     db: AsyncSession = Depends(get_db),
 ):
     require_role(user, "ADMIN", "STAFF")
-    # ensure parent product exists
-    prod = await db.get(Product, payload.product_id)
-    if not prod:
+    product = await db.get(Product, payload.product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="Parent product not found")
-    var = ProductVariant(**payload.dict())
-    db.add(var)
+    variant = ProductVariant(**payload.dict())
+    db.add(variant)
     await db.commit()
-    await db.refresh(var)
-    return VariantOut.from_orm(var)
+    await db.refresh(variant)
+    return VariantOut.from_orm(variant)
 
 @router.get("/variants/{variant_id}", response_model=VariantOut)
 async def get_variant(variant_id: str, db: AsyncSession = Depends(get_db)):
-    var = await db.get(ProductVariant, variant_id)
-    if not var:
+    variant = await db.get(ProductVariant, variant_id)
+    if not variant:
         raise HTTPException(status_code=404, detail="Variant not found")
-    return VariantOut.from_orm(var)
+    return VariantOut.from_orm(variant)
