@@ -95,7 +95,7 @@ describe('protected routing and honest integration states', () => {
       api.setCsrfToken('test-anonymous-csrf');
       throw new ApiError(401, 'UNAUTHORIZED', 'Sign in required');
     }).mockResolvedValue(internal);
-    const login = vi.spyOn(authService, 'login').mockResolvedValue({});
+    const login = vi.spyOn(authService, 'login').mockResolvedValue(undefined);
     open('/login');
     await screen.findByRole('heading', { name: 'Welcome back' });
     await userEvent.type(screen.getByLabelText(/Work email/), 'ADMIN@Example.test');
@@ -110,7 +110,7 @@ describe('protected routing and honest integration states', () => {
       api.setCsrfToken('test-anonymous-csrf');
       throw new ApiError(401, 'UNAUTHORIZED', 'Sign in required');
     });
-    vi.spyOn(authService, 'login').mockResolvedValue({});
+    vi.spyOn(authService, 'login').mockResolvedValue(undefined);
     open('/login');
     await screen.findByRole('heading', { name: 'Welcome back' });
     await userEvent.type(screen.getByLabelText(/Work email/), 'admin@example.test');
@@ -125,17 +125,17 @@ describe('protected routing and honest integration states', () => {
       api.setCsrfToken('anonymous-csrf');
       throw new ApiError(401, 'UNAUTHORIZED', 'Sign in required');
     });
-    const register = vi.spyOn(authService, 'register').mockResolvedValue({ user: customer.user });
+    const register = vi.spyOn(authService, 'register').mockResolvedValue({ account_id: customer.user.account_id, user_id: customer.user.id, role: 'CUSTOMER' });
     const router = open('/register');
     await screen.findByRole('heading', { name: 'Start with clarity' });
-    await userEvent.type(screen.getByLabelText(/Full name/), 'Demo Customer');
+    expect(screen.queryByLabelText(/Full name/)).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText(/Email address/), 'Customer@Example.test');
     await userEvent.type(screen.getByLabelText(/^Password/), 'ValidPass!');
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Your account was created.');
     expect(router.state.location.pathname).toBe('/login');
-    expect(register).toHaveBeenCalledWith({ name: 'Demo Customer', email: 'customer@example.test', password: 'ValidPass!' });
+    expect(register).toHaveBeenCalledWith({ email: 'customer@example.test', password: 'ValidPass!' });
   });
 
   it('focuses the password field and rejects a weak registration before any API write', async () => {
@@ -146,7 +146,6 @@ describe('protected routing and honest integration states', () => {
     const register = vi.spyOn(authService, 'register');
     open('/register');
     await screen.findByRole('heading', { name: 'Start with clarity' });
-    await userEvent.type(screen.getByLabelText(/Full name/), 'Demo Customer');
     await userEvent.type(screen.getByLabelText(/Email address/), 'customer@example.test');
     await userEvent.type(screen.getByLabelText(/^Password/), 'lowercaseonly!');
     await userEvent.click(screen.getByRole('button', { name: 'Create account' }));

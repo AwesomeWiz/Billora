@@ -5,7 +5,7 @@ import { Brand } from '../../app/Brand';
 import { Button, Input, LoadingSkeleton } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
 import { useAuth } from './AuthProvider';
-import { homeForRole, passwordError, safeReturnPath } from './contract';
+import { homeForRole, passwordError, passwordSymbols, safeReturnPath } from './contract';
 
 export function AuthLayout() {
   const { state } = useAuth();
@@ -42,7 +42,7 @@ function ConnectionNotice() {
   if (state.status !== 'error' && ready) return null;
   return <div className="notice notice-warning" role="status">
     <strong>{state.status === 'error' ? 'Authentication service unavailable' : 'Secure sign-in is not ready'}</strong>
-    <p>{state.status === 'error' ? state.error.message : 'The service has not issued a secure request token. Please reconnect before submitting.'}</p>
+    <p>{state.status === 'error' ? state.error.message : 'The authentication service has not supplied the secure request token required to sign in or create an account. Reconnect when the service is ready.'}</p>
     <Button variant="secondary" onClick={() => void refresh()}>Reconnect</Button>
   </div>;
 }
@@ -101,7 +101,7 @@ export function RegisterPage() {
     if (invalid) { passwordRef.current?.focus(); return; }
     setPending(true); setError(null);
     try {
-      await register({ name: String(data.get('name')).trim(), email: String(data.get('email')).trim().toLowerCase(), password });
+      await register({ email: String(data.get('email')).trim().toLowerCase(), password });
       navigate('/login', { replace: true, state: { registered: true } });
     } catch (err) { setError(errorMessage(err)); }
     finally { setPending(false); }
@@ -111,10 +111,9 @@ export function RegisterPage() {
     <h2 className="auth-title">Start with clarity</h2><p className="auth-description">Create an account to view your subscriptions and bills.</p>
     <ConnectionNotice />
     <form onSubmit={submit} className="auth-form" aria-label="Create account">
-      <Input label="Full name" name="name" autoComplete="name" required maxLength={120} pattern=".*\S.*" />
       <Input label="Email address" type="email" name="email" autoComplete="username" required maxLength={254} />
       <Input ref={passwordRef} label="Password" type="password" name="password" autoComplete="new-password" minLength={9} required
-        hint="At least 9 characters with uppercase, lowercase, and a special character. No number required."
+        hint={'At least 9 characters with uppercase, lowercase, and a supported special character (' + passwordSymbols + '). No number required.'}
         error={validation} onChange={() => setValidation(undefined)} />
       <FormError message={error} />
       <Button type="submit" loading={pending} disabled={state.status === 'error' || !api.hasCsrfToken()} className="full-width">Create account <ArrowRight size={16} aria-hidden="true" /></Button>

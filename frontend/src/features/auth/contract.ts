@@ -1,5 +1,7 @@
 /**
- * Narrow frontend adapter for docs/ARCHITECTURE.md §3.1 and §7.3.
+ * Feature-local authentication adapter. Registration follows the inspected
+ * backend/app/schemas/auth.py; session acceptance retains Architecture §7.3's
+ * verified user identity and CSRF requirements. See INTEGRATION.md for blockers.
  * contracts/api-types.ts and contracts/enums.ts do not exist yet. Replace these
  * adapter types with coordinated shared imports when Adithya publishes them.
  * These are not new backend contracts.
@@ -19,9 +21,22 @@ export interface Session {
   csrf_token: string;
 }
 export interface LoginInput { email: string; password: string }
-export interface RegisterInput extends LoginInput { name: string }
+export type RegisterInput = LoginInput;
+export interface RegistrationResult { account_id: string; user_id: string; role: 'CUSTOMER' }
+
+export function parseRegistration(value: unknown): RegistrationResult {
+  if (!isRecord(value) || typeof value.account_id !== 'string' || !value.account_id.trim() ||
+    typeof value.user_id !== 'string' || !value.user_id.trim() || value.role !== 'CUSTOMER') {
+    throw new ApiError(0, 'REGISTRATION_UNVERIFIED', 'The service response did not confirm account creation. Check with your administrator before submitting again.');
+  }
+  return { account_id: value.account_id, user_id: value.user_id, role: 'CUSTOMER' };
+}
 
 export function parseSession(value: unknown): Session {
+  // An account ID is not a user ID. Neither it nor a login access_token is CSRF.
+  if (isRecord(value) && !isRecord(value.user) && typeof value.account_id === 'string' && typeof value.email === 'string' && typeof value.role === 'string') {
+    throw new ApiError(0, 'SESSION_CONTRACT_MISMATCH', 'The authentication service has not supplied a verified user identity and secure request token. Sign-in cannot be verified yet.');
+  }
   if (!isRecord(value) || !isRecord(value.user)) throw invalidSession();
   const user = value.user;
   if (typeof user.id !== 'string' || !user.id || typeof user.email !== 'string' || !user.email ||
@@ -50,7 +65,9 @@ export function safeReturnPath(value: unknown, role: Role): string {
     ? `${url.pathname}${url.search}${url.hash}` : homeForRole(role);
 }
 
+/** Exact special-character set in backend RegisterIn.pwd_complex. No digit requirement. */
+export const passwordSymbols = '!@#$%^&*()-_=+[]{}|;:,.<>?/';
 export function passwordError(password: string): string | undefined {
-  return password.length > 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /[^A-Za-z0-9\s]/.test(password)
-    ? undefined : 'Use at least 9 characters, an uppercase letter, a lowercase letter, and a special character.';
+  return [...password].length > 8 && /\p{Uppercase}/u.test(password) && /\p{Lowercase}/u.test(password) && [...password].some(char => passwordSymbols.includes(char))
+    ? undefined : 'Use at least 9 characters, uppercase, lowercase, and a supported special character: ' + passwordSymbols;
 }

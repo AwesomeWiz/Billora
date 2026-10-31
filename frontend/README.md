@@ -21,13 +21,13 @@ Only `src/app/router.tsx` integrates routes. Abiya can export named screens from
 
 ## Backend handoff — unresolved contracts
 
-The repository initially contained only `docs/PRD.md`, `docs/ARCHITECTURE.md`, and `docs/DESIGN.md`. There is no backend or `contracts/api-types.ts` / `contracts/enums.ts`. No shared contracts were created or edited. `src/features/auth/contract.ts` is a small, explicitly provisional adapter limited to the identity/registration shapes already documented in Architecture §3.1/§7.3. Replace it with coordinated shared imports when published. It does not define financial DTOs.
+At Phase 1 implementation, the repository contained only `docs/PRD.md`, `docs/ARCHITECTURE.md`, and `docs/DESIGN.md`, with no backend or shared TypeScript contracts. Initial backend auth source has since been added and inspected; see the authentication checkpoint below. No shared contracts were created or edited. `src/features/auth/contract.ts` remains a feature-local adapter, now aligned with verified registration fields while retaining the architecture's secure session requirements. Replace it with coordinated shared imports when published. It does not define financial DTOs.
 
 Adithya / integration owner must agree and publish:
 
 - `GET /api/auth/me`: documented `{ user: { id, email, role, account_id }, csrf_token }`; known server role required, customer billing account required, CSRF nonempty. `401` means unauthenticated; transport/404/5xx/malformed responses remain visible service errors.
 - Anonymous CSRF bootstrap for login/register/reset: Architecture requires CSRF on mutations but only documents token issuance for an authenticated `/auth/me`. The client can consume an explicit `X-CSRF-Token` response header on the session probe, including a `401`, **if the backend adopts that policy**. This is a proposed integration seam, not an asserted backend contract. Otherwise coordinate a public bootstrap route and update this adapter. Until a real token is issued, credential submission is unavailable. Never fabricate tokens or exempt public writes implicitly.
-- `POST /api/auth/login` accepts documented email/password; success is followed by `/auth/me`, which alone grants application access. `POST /api/auth/register` uses documented name/email/password and never sends a role. Account creation does not imply a session. Login response bodies are not assumed.
+- `POST /api/auth/login` uses email/password; success is followed by `/auth/me`, which alone grants application access. Registration now follows the inspected backend schema: email/password only, with validated `{account_id,user_id,role:"CUSTOMER"}` response. Account creation does not imply a session. Raw login response credentials are discarded.
 - `POST /api/auth/logout` revokes the server session; local state clears only after success. An API `401` also invalidates local session state.
 - Forgot/reset password request fields, reset token URL convention, neutral response envelope, provider delivery versus `PREVIEW_ONLY`, and CSRF bootstrap are not frozen. The recovery routes and accessible forms are present but submission stays unavailable until agreement. No reset request is made and no delivery/password-change success is fabricated. `/reset-password?token=...` currently recognizes the conventional query key only for an unavailable-state message; coordinate its final URL format.
 
@@ -42,6 +42,8 @@ Verified in this batch: `npm.cmd run typecheck` passed, `npm.cmd test -- --repor
 Next milestone: freeze shared auth/CSRF/reset contracts with Adithya, connect the real auth service, and verify registration → sign-in → role redirect → logout and real/preview reset behavior. Then integrate the P0 customer/subscription list and detail APIs with server pagination and allowed lifecycle actions. Reporting, invoices, and payments follow; P1 remains deferred.
 
 ## Phase 1 files
+
+For the later authentication checkpoint, see [confirmed contracts and remaining backend blockers](src/features/auth/INTEGRATION.md). The checked-in backend currently lacks CSRF bootstrap/enforcement and a compatible session envelope; real browser registration/login remains unavailable. The Phase 1/2 verification notes above describe their respective implementation batches, not a live backend authentication result.
 
 All files in this batch are new and inside `frontend/`; pre-existing documentation and teammate-owned directories remain untouched.
 

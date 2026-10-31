@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApiClient } from '../lib/api';
+import { ApiError, createApiClient } from '../lib/api';
 
 const json = (data: unknown, status = 200, headers?: Record<string, string>) => new Response(JSON.stringify(data), {
   status, headers: { 'Content-Type': 'application/json', ...headers },
@@ -67,6 +67,7 @@ describe('API transport and mutation safety', () => {
     const detail = [{ loc: ['body', 'password'], msg: 'Password must contain upper, lower & special char', type: 'value_error', input: 'test-only-sensitive-input', ctx: { error: 'test-only-sensitive-input' } }];
     const client = createApiClient({ fetcher: vi.fn().mockResolvedValue(json({ detail }, 422)) });
     const error = await client.get('/auth/me').catch(value => value);
+    if (!(error instanceof ApiError)) throw new Error('Expected a normalized API error');
     expect(error.details).toEqual([{ loc: ['body', 'password'], msg: detail[0].msg, type: 'value_error' }]);
     expect(JSON.stringify(error)).not.toContain('test-only-sensitive-input');
   });
@@ -74,6 +75,7 @@ describe('API transport and mutation safety', () => {
   it('does not retain raw FastAPI server trace details', async () => {
     const client = createApiClient({ fetcher: vi.fn().mockResolvedValue(json({ detail: 'Internal traceback', details: { sql: 'Internal SQL' } }, 500)) });
     const error = await client.get('/auth/me').catch(value => value);
+    if (!(error instanceof ApiError)) throw new Error('Expected a normalized API error');
     expect(error.message).not.toContain('traceback');
     expect(error.details).toBeUndefined();
   });
