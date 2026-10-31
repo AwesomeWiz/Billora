@@ -73,8 +73,9 @@ describe('authentication integration checkpoint', () => {
     expect(button).toBeDisabled();
     expect(screen.getByRole('status')).toHaveTextContent('required to sign in or create an account');
     await userEvent.click(button);
-    expect(fetcher).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledTimes(2);
     expect(fetcher.mock.calls[0][0]).toBe('/api/auth/me');
+    expect(fetcher.mock.calls[1][0]).toBe('/api/auth/csrf');
     expect(api.hasCsrfToken()).toBe(false);
   });
 
@@ -87,10 +88,8 @@ describe('authentication integration checkpoint', () => {
   });
 
   it('does not show account-created success for a malformed successful HTTP response', async () => {
-    // Test-only future CSRF issuance allows exercising response validation. It is
-    // not evidence that the current backend implements anonymous CSRF bootstrap.
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input => String(input) === '/api/auth/me'
-      ? json({ detail: 'Missing session token' }, 401, { 'X-CSRF-Token': 'test-only-csrf' }) : json({}));
+      ? json({ detail: 'Missing session token' }, 401) : String(input) === '/api/auth/csrf' ? json({ csrf_token: 'test-only-csrf' }) : json({}));
     const router = open('/register');
     await screen.findByRole('heading', { name: 'Start with clarity' });
     await userEvent.type(screen.getByLabelText(/Email address/), 'customer@example.test');
@@ -105,7 +104,8 @@ describe('authentication integration checkpoint', () => {
     let probed = false;
     vi.spyOn(globalThis, 'fetch').mockImplementation(async input => {
       if (String(input) === '/api/auth/login') return json({ access_token: 'test-only-opaque-credential', token_type: 'bearer' });
-      if (!probed) { probed = true; return json({}, 401, { 'X-CSRF-Token': 'test-only-csrf' }); }
+      if (String(input) === '/api/auth/csrf') return json({ csrf_token: 'test-only-csrf' });
+      if (!probed) { probed = true; return json({}, 401); }
       return json({ account_id: 'test-account', email: 'customer@example.test', role: 'CUSTOMER' });
     });
     const router = open('/login');

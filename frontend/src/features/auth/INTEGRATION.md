@@ -1,4 +1,20 @@
-# Authentication integration checkpoint — 31 October 2026
+# Authentication integration checkpoints
+
+## Current live checkpoint — 31 October 2026
+
+The earlier source-only inspection below is historical and superseded by this live check. The current backend mounts `/api/auth/csrf`, register, login, me and logout. A disposable SQLite database, real Uvicorn HTTP requests and real Edge through the Vite proxy verified CSRF issuance, credential writes, cookies and logout. No backend files, session identities or authorization dependencies were patched.
+
+The frontend now calls the confirmed `GET /api/auth/csrf` after `/api/auth/me` returns 401, validates `CsrfOut.csrf_token`, and retains that server-issued value in memory for cookie-authenticated mutations. Failed/malformed/aborted bootstrap cannot grant a session or enable writes with a fabricated token. A valid session uses the authenticated `/me` token directly. Registration follows real `RegisterOut` and redirects to sign-in without claiming a session. Login ignores `LoginOut.detail` as identity and always probes `/me`.
+
+**Full sign-in remains CONTRACT_MISMATCH:** the live response is `{user:{account_id,email,role},csrf_token}`, missing `user.id`. The frontend retains its user-ID requirement, clears request-token state on an invalid session, shows the mismatch and keeps protected content closed across browser refresh. Account ID and RegisterOut.user_id are not substituted into `/me` identity. No legacy bearer credential is stored or reused.
+
+Live auth writes reject missing CSRF with 422 and mismatches with 403. Login sets `session_token` with HttpOnly, SameSite=Lax, Path=/ and Max-Age=3600 (Secure=false on local HTTP). Logout clears session/CSRF cookies and replaying the revoked current cookie returns 401. A fresh client/browser retains the valid server cookie, but frontend routing correctly remains blocked by the missing ID. A valid-token login with an untrusted Origin returned 200; trusted-Origin validation, CSRF session binding/rotation and deployment cookie/cache policy need Adithya's review. Password recovery remains absent.
+
+See [the P0 status matrix and exact backend handoff](../../app/P0_INTEGRATION.md) and the opt-in [real HTTP/browser audit](../../tests/live_backend_checkpoint.py). Real registration and the missing-ID refusal were checked in Edge with no request interception. ADMIN/STAFF successful redirects, protected refresh and the AppShell sign-out button remain unverified against real identities; automated provider tests do not replace that evidence.
+
+## Historical source-only checkpoint
+
+The following records the old inspection boundary and its then-unresolved issues, not the latest backend state.
 
 Status: verified frontend compatibility fixes are implemented; real registration/login remains blocked. No CSRF bypass, bearer-token fallback, session fabrication, or backend/shared-contract edits are included.
 

@@ -24,6 +24,14 @@ export interface LoginInput { email: string; password: string }
 export type RegisterInput = LoginInput;
 export interface RegistrationResult { account_id: string; user_id: string; role: 'CUSTOMER' }
 
+/** Verified backend CsrfOut, used with its cookie through the same-origin proxy. */
+export function parseCsrf(value: unknown): string {
+  if (!isRecord(value) || typeof value.csrf_token !== 'string' || !value.csrf_token.trim()) {
+    throw new ApiError(0, 'CSRF_CONTRACT_MISMATCH', 'The authentication service did not supply a valid secure request token. Reconnect before submitting credentials.');
+  }
+  return value.csrf_token;
+}
+
 export function parseRegistration(value: unknown): RegistrationResult {
   if (!isRecord(value) || typeof value.account_id !== 'string' || !value.account_id.trim() ||
     typeof value.user_id !== 'string' || !value.user_id.trim() || value.role !== 'CUSTOMER') {
@@ -39,7 +47,10 @@ export function parseSession(value: unknown): Session {
   }
   if (!isRecord(value) || !isRecord(value.user)) throw invalidSession();
   const user = value.user;
-  if (typeof user.id !== 'string' || !user.id || typeof user.email !== 'string' || !user.email ||
+  if (user.id === undefined && typeof user.account_id === 'string' && typeof user.email === 'string' && roles.includes(user.role as Role)) {
+    throw new ApiError(0, 'SESSION_CONTRACT_MISMATCH', 'The authentication service did not return a user ID. Sign-in cannot be verified; contact your administrator.');
+  }
+  if (typeof user.id !== 'string' || !user.id.trim() || typeof user.email !== 'string' || !user.email.trim() ||
     !roles.includes(user.role as Role) || typeof value.csrf_token !== 'string' || !value.csrf_token.trim() ||
     (user.account_id !== undefined && user.account_id !== null && typeof user.account_id !== 'string') ||
     (user.role === 'CUSTOMER' && (typeof user.account_id !== 'string' || !user.account_id))) throw invalidSession();
