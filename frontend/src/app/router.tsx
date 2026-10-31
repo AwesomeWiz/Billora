@@ -10,6 +10,7 @@ import { InvoiceListPage } from '../features/billing/InvoiceListPage';
 import { InvoiceDetailPage } from '../features/billing/InvoiceDetailPage';
 import { ProductsPage } from '../features/admin/products';
 import { PlansPage } from '../features/admin/plans';
+import { QuotationTemplatesPage } from '../features/quotations';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ReportsPage } from '../features/dashboard/ReportsPage';
 import { ErrorState, EmptyState } from '../components/ui';
@@ -48,6 +49,7 @@ export const routeConfig = [
       { path: 'invoices/:id', element: <InvoiceDetailPage /> },
       { path: 'catalog/products', element: <ProductsPage /> },
       { path: 'catalog/plans', element: <PlansPage /> },
+      { path: 'quotation-templates', element: <QuotationTemplatesPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
   ] },
