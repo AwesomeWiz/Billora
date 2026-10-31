@@ -5,7 +5,7 @@ export function navigationFor(role: Role) {
   if (role === 'CUSTOMER') return [
     { label: 'Home', to: '/portal/home', icon: House, available: true },
     { label: 'My subscriptions', to: '/portal/subscriptions', icon: Layers3, available: true },
-    { label: 'My invoices', to: '/portal/invoices', icon: Receipt, available: false },
+    { label: 'My invoices', to: '/portal/invoices', icon: Receipt, available: true },
     { label: 'Account', to: '/portal/account', icon: Settings2, available: true },
   ];
   return [

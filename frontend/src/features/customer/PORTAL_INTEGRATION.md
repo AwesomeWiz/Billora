@@ -17,3 +17,22 @@ Use the existing architecture paths, not new speculative `/portal` or `/me/subsc
 - `/api/auth/me` must return the actual User.id alongside role/account_id/email and server-issued CSRF. No cached registration ID or account_id substitution.
 
 Backend ownership enforcement and successful owned/cross-account reads are **unverified**, not implemented by a client-side filter. Current tests prove the frontend makes no unverified data requests; they do not prove backend isolation. Loading/error/permission handling remains at the existing protected-session boundary until a safe billing request can be enabled. A missing contract is presented as unavailable rather than a fake empty response.
+
+## Invoice and account experience
+
+`/portal/invoices` and `/portal/invoices/:id` are CUSTOMER-only and read-only. Navigation is enabled on desktop/mobile. Invoice detail IDs do not trigger any request while ownership contracts are absent. Print is disabled with an explanation; no blank page, fabricated financial document or success is printed. No confirm/cancel/send/manual payment controls are mounted. Payment history is unavailable rather than falsely empty.
+
+`/portal/account` displays only authenticated session email/role/account_id. Profile/password/email-change endpoints are not guessed; no editable form or pretend reset delivery is shown. ADMIN/STAFF continue to redirect to their own workspace when opening portal routes.
+
+Additional backend dependencies:
+
+- `GET /api/invoices` and `/api/invoices/{id}`: principal-scoped list/detail with stable pagination and customer-safe immutable invoice/bill-to/line/discount/tax/currency/settlement fields. Confirm list status visibility (especially DRAFT/CANCELLED). Test cross-account IDs and nested subscription/payment relations. No current-catalog joins may replace historical snapshot prices.
+- `GET /api/invoices/{id}/payments`: enforce invoice ownership first, return agreed customer-safe amount/method/date/reference/note projections. Internal actor/reconciliation metadata must not leak. No global payment listing is required or invented.
+- Browser printing must use the same authorized snapshot (or documented ownership-checked `/api/invoices/{id}/print`). The operational InvoiceDocument currently includes internal customer/subscription links and its Print control is ADMIN/STAFF-only. It is deliberately not mounted or granted CUSTOMER permission here. Extract a customer-safe document only after the customer DTO is confirmed; reuse formatters/status/table styles without exposing operational actions.
+- Freeze secure profile/password management endpoints, payloads and authorization/CSRF/Origin policy before enabling account changes.
+
+Remaining acceptance work is blocked: actual owned lists/details, successful empty/error read states, server aggregates, payment history, financial snapshot rendering/printing and real two-account isolation tests. No test fixtures are wired into production and no passing frontend test should be read as proof of these backend behaviors.
+
+## Validation
+
+`npm.cmd run typecheck` passed; `npm.cmd test -- --reporter=dot` passed **441 tests in 29 files**, including 26 new portal tests. `npm.cmd run build` passed with the existing Vite large-chunk advisory. Tests exercise CUSTOMER routes, session loading/error/permission/missing-ID gates, internal/portal role boundaries, manipulated detail IDs making no unsafe requests, account remounts, disabled mutations/printing and desktop/mobile navigation. They deliberately do not fabricate successful owned-record or snapshot responses under an unconfirmed contract.
