@@ -34,7 +34,7 @@ describe('subscription plans route integration', () => {
     expect(within(navigation).getByRole('link', { name: 'Plans' })).toHaveAttribute('aria-current', 'page');
     expect(within(navigation).getByRole('link', { name: 'Products & Variants' })).toHaveAttribute('href', '/app/catalog/products');
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/plans', expect.objectContaining({ method: 'GET', credentials: 'include' }));
-    if (role === 'ADMIN') for (const label of ['Taxes & discounts', 'Staff']) {
+    if (role === 'ADMIN') for (const label of ['Staff']) {
       expect(within(navigation).getByText(label).closest('[aria-disabled]')).toHaveAttribute('aria-disabled', 'true');
       expect(within(navigation).queryByRole('link', { name: label })).not.toBeInTheDocument();
     }

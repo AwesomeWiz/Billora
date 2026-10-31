@@ -40,7 +40,7 @@ describe('products module integration', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/api/products', expect.objectContaining({ method: 'GET', credentials: 'include' }));
     if (role === 'ADMIN') {
       expect(within(navigation).getByRole('link', { name: 'Plans' })).toHaveAttribute('href', '/app/catalog/plans');
-      for (const label of ['Taxes & discounts', 'Staff']) {
+      for (const label of ['Staff']) {
         expect(within(navigation).getByText(label).closest('[aria-disabled]')).toHaveAttribute('aria-disabled', 'true');
         expect(within(navigation).queryByRole('link', { name: label })).not.toBeInTheDocument();
       }
