@@ -1,4 +1,4 @@
-import { BarChart3, CreditCard, FileText, House, Layers3, LayoutDashboard, Receipt, Settings2, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { Activity, BarChart3, Bell, CreditCard, FileText, House, Layers3, LayoutDashboard, Receipt, Settings2, ShieldCheck, Users, Wallet } from 'lucide-react';
 import type { Role } from '../features/auth/contract';
 
 export function navigationFor(role: Role) {
@@ -21,6 +21,8 @@ export function navigationFor(role: Role) {
     { label: 'Discounts', to: '/app/catalog/discounts', icon: FileText, available: true },
     { label: 'Quotation Templates', to: '/app/quotation-templates', icon: FileText, available: true },
     { label: 'Reports', to: '/app/reports', icon: BarChart3, available: true },
+    { label: 'Activity Timeline', to: '/app/activity', icon: Activity, available: true },
+    { label: 'Notifications', to: '/app/notifications', icon: Bell, available: true },
   ];
 }
 
