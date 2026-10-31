@@ -2,6 +2,7 @@ import { Link, Navigate, useRouteError } from 'react-router-dom';
 import { AuthLayout, ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage, SessionHomeRedirect } from '../features/auth/AuthPages';
 import { ProtectedRoute } from '../features/auth/ProtectedRoute';
 import { PortalHome, AccountPage } from '../features/customer/PortalHome';
+import { PortalSubscriptions } from '../features/customer/PortalSubscriptions';
 import { CustomersPage } from '../features/customer/CustomersPage';
 import { CustomerDetailPage } from '../features/customer/CustomerDetailPage';
 import { SubscriptionsPage } from '../features/subscriptions/SubscriptionsPage';
@@ -57,6 +58,8 @@ export const routeConfig = [
     { path: '/portal', element: <AppShell />, children: [
       { index: true, element: <Navigate to="home" replace /> },
       { path: 'home', element: <PortalHome /> },
+      { path: 'subscriptions', element: <PortalSubscriptions /> },
+      { path: 'subscriptions/:id', element: <PortalSubscriptions detail /> },
       { path: 'account', element: <AccountPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
