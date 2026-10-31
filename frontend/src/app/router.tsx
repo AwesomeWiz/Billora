@@ -5,6 +5,7 @@ import { PortalHome, AccountPage } from '../features/customer/PortalHome';
 import { CustomersPage } from '../features/customer/CustomersPage';
 import { CustomerDetailPage } from '../features/customer/CustomerDetailPage';
 import { SubscriptionsPage } from '../features/subscriptions/SubscriptionsPage';
+import { SubscriptionDetailPage } from '../features/subscriptions/SubscriptionDetailPage';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ErrorState, EmptyState } from '../components/ui';
 import { AppShell } from './AppShell';
@@ -36,6 +37,7 @@ export const routeConfig = [
       { path: 'customers', element: <CustomersPage /> },
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'subscriptions', element: <SubscriptionsPage /> },
+      { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
   ] },
