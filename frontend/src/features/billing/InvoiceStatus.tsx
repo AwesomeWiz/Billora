@@ -12,6 +12,7 @@ export function InvoicePaymentBadge({ invoice }: { invoice: InvoiceSummary }) {
   if (invoice.payment_status) return <StatusBadge status={invoice.payment_status} label={invoice.payment_status === 'UNPAID' ? 'Unpaid' : undefined} tone={invoice.payment_status === 'UNPAID' ? 'warning' : undefined} />;
   if (invoice.paid_minor !== undefined && invoice.paid_minor > 0 && invoice.paid_minor < invoice.total_minor) return <StatusBadge status="PARTIALLY_PAID" />;
   if (invoice.paid_minor === invoice.total_minor || invoice.balance_minor === 0) return <StatusBadge status="AWAITING_SETTLEMENT" label="Awaiting settlement" tone="info" />;
-  if (invoice.paid_minor === 0 || (invoice.balance_minor !== undefined && invoice.balance_minor > 0)) return <StatusBadge status="BALANCE_DUE" label="Balance due" tone="warning" />;
+  if (invoice.paid_minor === 0) return <StatusBadge status="UNPAID" label="Unpaid" tone="warning" />;
+  if (invoice.balance_minor !== undefined && invoice.balance_minor > 0) return <StatusBadge status="BALANCE_DUE" label="Balance due" tone="warning" />;
   return <span className="muted">Not provided</span>;
 }

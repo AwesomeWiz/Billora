@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Brand } from '../../app/Brand';
 import { EmptyState, Money, PageHeader } from '../../components/ui';
@@ -9,6 +9,7 @@ import { invoiceDetailApi, type InvoiceDetail } from './invoice-detail-api';
 import { InvoiceLifecycleBadge, InvoicePaymentBadge } from './InvoiceStatus';
 import { InvoiceActions } from './InvoiceActions';
 import { InvoiceDelivery, InvoicePrint } from './InvoiceOutput';
+import { InvoicePaymentHistory } from './InvoicePaymentHistory';
 import './billing.css';
 
 function SnapshotMoney({ amount, currency }: { amount?: number; currency: string }) {
@@ -95,6 +96,7 @@ function InvoiceDocument({ invoice }: { invoice: InvoiceDetail }) {
 }
 
 function InvoiceRecord({ id }: { id: string }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const load = useCallback((signal: AbortSignal) => invoiceDetailApi.detail(id, signal), [id]);
   const { resource, reload } = useRecordResource(id, load);
   const invoice = resource.status === 'ready' ? resource.data : null;
@@ -104,7 +106,8 @@ function InvoiceRecord({ id }: { id: string }) {
       action={invoice ? <InvoiceLifecycleBadge invoice={invoice} /> : undefined} />
     {resource.status === 'loading' && <RecordsLoading label="Loading invoice details" />}
     {resource.status === 'error' && <RecordError error={resource.error} retry={reload} />}
-    {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDelivery invoice={invoice} /><InvoicePrint key={invoice.id} invoice={invoice} /><InvoiceDocument invoice={invoice} /></>}
+    {invoice && <><InvoiceActions invoice={invoice} onRefresh={reload} /><InvoiceDelivery invoice={invoice} /><InvoicePrint key={invoice.id} invoice={invoice} /><InvoiceDocument invoice={invoice} />
+      <InvoicePaymentHistory invoice={invoice} expanded={historyOpen} onExpand={setHistoryOpen} onRefresh={reload} /></>}
   </div>;
 }
 

@@ -91,7 +91,7 @@ describe('invoice list', () => {
   });
 
   it.each([
-    [{ ...invoiceFixture, paid_minor: 0, balance_minor: 106200, due_on: '2000-01-01' }, 'Balance due'],
+    [{ ...invoiceFixture, paid_minor: 0, balance_minor: 106200, due_on: '2000-01-01' }, 'Unpaid'],
     [{ ...invoiceFixture, paid_minor: 0, balance_minor: 106200, due_on: '2099-01-01', payment_status: 'OVERDUE' }, 'Overdue'],
     [{ ...invoiceFixture, status: 'PAID', paid_minor: 106200, balance_minor: 0 }, 'Paid'],
     [{ ...invoiceFixture, paid_minor: 106200, balance_minor: 0 }, 'Awaiting settlement'],

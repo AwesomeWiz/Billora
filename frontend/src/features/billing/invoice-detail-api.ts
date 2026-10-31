@@ -7,7 +7,7 @@ export interface InvoiceSnapshotLine {
   source_subscription_id?: string; variant_id?: string; variant_description?: string;
   line_subtotal_minor?: number; discount_minor?: number; tax_bps?: number; tax_minor?: number; total_minor?: number;
 }
-export interface InvoicePayment { id: string; amount_minor: number; method: string; paid_at: string; note?: string }
+export interface InvoicePayment { id: string; amount_minor: number; method: string; paid_at: string; external_ref?: string; note?: string }
 export interface InvoiceDetail extends InvoiceSummary { lines?: InvoiceSnapshotLine[]; payments?: InvoicePayment[]; sent_at?: string }
 
 function instant(value: unknown): string {
@@ -36,13 +36,13 @@ function parseLine(value: unknown): InvoiceSnapshotLine {
   return line;
 }
 
-function parsePayment(value: unknown, invoiceId: string): InvoicePayment {
+export function parseInvoicePayment(value: unknown, invoiceId: string): InvoicePayment {
   const body = record(value);
   if (body.invoice_id != null && identifier(body.invoice_id) !== invoiceId) return invalidInvoice();
   const amount = minor(body.amount_minor);
   const paidAt = instant(body.paid_at);
   if (amount <= 0) return invalidInvoice();
-  return { id: identifier(body.id), amount_minor: amount, method: text(body.method), paid_at: paidAt, note: optionalText(body.note) };
+  return { id: identifier(body.id), amount_minor: amount, method: text(body.method), paid_at: paidAt, external_ref: optionalText(body.external_ref), note: optionalText(body.note) };
 }
 
 function optionalItems<T extends { id: string }>(value: unknown, parse: (item: unknown) => T): T[] | undefined {
@@ -56,7 +56,7 @@ function optionalItems<T extends { id: string }>(value: unknown, parse: (item: u
 export function parseInvoiceDetail(value: unknown): InvoiceDetail {
   const body = record(value);
   const invoice = parseInvoiceSummary(body);
-  return { ...invoice, lines: optionalItems(body.lines, parseLine), payments: optionalItems(body.payments, payment => parsePayment(payment, invoice.id)),
+  return { ...invoice, lines: optionalItems(body.lines, parseLine), payments: optionalItems(body.payments, payment => parseInvoicePayment(payment, invoice.id)),
     sent_at: body.sent_at == null ? undefined : instant(body.sent_at) };
 }
 
