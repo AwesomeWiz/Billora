@@ -3,4 +3,5 @@ export * from './services/taxService';
 export * from './hooks/useTaxes';
 export * from './components/TaxFilters';
 export * from './components/TaxTable';
+export * from './components/TaxFormModal';
 export * from './pages/TaxesPage';

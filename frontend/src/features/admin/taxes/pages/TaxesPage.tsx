@@ -4,7 +4,8 @@ import { useTaxes } from '../hooks/useTaxes';
 import { taxService } from '../services/taxService';
 import { TaxFilters } from '../components/TaxFilters';
 import { TaxTable } from '../components/TaxTable';
-import type { TaxRule } from '../types';
+import { TaxFormModal } from '../components/TaxFormModal';
+import type { TaxRule, CreateTaxInput, UpdateTaxInput } from '../types';
 
 export function TaxesPage() {
   const {
@@ -23,6 +24,17 @@ export function TaxesPage() {
   const [isTogglingId, setIsTogglingId] = useState<string | null>(null);
 
   const hasFilterActive = Boolean(params.search?.trim() || params.scope || params.active);
+
+  const handleCreateSubmit = async (data: CreateTaxInput | UpdateTaxInput) => {
+    await taxService.createTax(data as CreateTaxInput);
+    await refresh();
+  };
+
+  const handleEditSubmit = async (data: CreateTaxInput | UpdateTaxInput) => {
+    if (!editingTax) return;
+    await taxService.updateTax(editingTax.id, data as UpdateTaxInput);
+    await refresh();
+  };
 
   const handleToggleActive = async (tax: TaxRule) => {
     const actionWord = tax.active ? 'deactivate' : 'activate';
@@ -164,17 +176,20 @@ export function TaxesPage() {
         </>
       )}
 
-      {/* Placeholders for modal/drawers to be connected in milestone 3 */}
-      {isCreating && (
-        <div role="dialog" aria-modal="true" style={{ display: 'none' }}>
-          <button onClick={() => setIsCreating(false)}>Close</button>
-        </div>
-      )}
-      {editingTax && (
-        <div role="dialog" aria-modal="true" style={{ display: 'none' }}>
-          <button onClick={() => setEditingTax(null)}>Close</button>
-        </div>
-      )}
+      {/* Tax Form Modal (Create) */}
+      <TaxFormModal
+        isOpen={isCreating}
+        onClose={() => setIsCreating(false)}
+        onSubmit={handleCreateSubmit}
+      />
+
+      {/* Tax Form Modal (Edit) */}
+      <TaxFormModal
+        isOpen={Boolean(editingTax)}
+        tax={editingTax}
+        onClose={() => setEditingTax(null)}
+        onSubmit={handleEditSubmit}
+      />
     </div>
   );
 }
