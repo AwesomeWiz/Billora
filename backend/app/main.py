@@ -13,6 +13,7 @@ from app.api.revenue_alerts import router as revenue_alerts_router
 from app.api.activity import router as activity_router
 from app.api.gst import router as gst_router
 from app.api.imports import router as imports_router
+from app.api.lifecycle import router as lifecycle_router
 from app.core.config import settings
 from app.core.db import engine, Base
 from app.core.admin_schema import initialize_admin_schema
@@ -40,6 +41,7 @@ app.include_router(revenue_alerts_router, prefix=settings.api_prefix)
 app.include_router(activity_router, prefix=settings.api_prefix)
 app.include_router(gst_router, prefix=settings.api_prefix)
 app.include_router(imports_router, prefix=settings.api_prefix)
+app.include_router(lifecycle_router, prefix=settings.api_prefix)
 
 @app.get(f"{settings.api_prefix}/health")
 async def health():

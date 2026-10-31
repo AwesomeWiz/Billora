@@ -17,6 +17,8 @@ def initialize_admin_schema(connection):
         "product_variants": {"attribute_name": "VARCHAR NOT NULL DEFAULT 'variant'",
                              "active": "BOOLEAN NOT NULL DEFAULT 1", "created_at": "DATETIME",
                              "deleted_at": "DATETIME"},
+        "invoices": {"status": "VARCHAR NOT NULL DEFAULT 'CONFIRMED'"},
+        "subscriptions": {"next_billing_date": "DATE"},
     }
     for table, columns in additions.items():
         present = {column["name"] for column in inspect(connection).get_columns(table)}

@@ -99,6 +99,25 @@ There is no persisted next-billing date or billing-cycle table, so missed-cycle
 and blocked-billing findings are not emitted. Notifications reflect recorded
 subscription end dates only; they are not a substitute for recurring billing.
 
+## Subscription lifecycle, invoice lifecycle, and reports
+
+- `POST /api/subscriptions/{id}/transition` — ADMIN/STAFF, session + CSRF +
+  trusted Origin. Validates state transitions and plan pause/close policy;
+  activation records a first due date from the plan interval, and pausing
+  retains that anchor.
+- Invoice actions: `POST /api/invoices/{id}/confirm`, `/cancel`, and `/send`,
+  plus `GET /api/invoices/{id}/print`. Confirm/cancel require ADMIN/STAFF and
+  CSRF/Origin. Cancellation is limited to confirmed unpaid invoices. Send
+  explicitly returns `PREVIEW_ONLY`; the backend has no configured delivery
+  adapter. Print returns printable HTML and respects customer ownership.
+- `GET /api/reports/summary` and `/api/reports/overdue` — ADMIN/STAFF.
+  Calculations use persisted invoice and payment rows and integer paise.
+
+These endpoints do not create invoice lines or billing cycles. Activating a
+subscription does not by itself run billing. Month-end recurrence anchoring,
+missed-cycle backfill, and preview/run billing endpoints remain unavailable
+until the subscription line/pricing and billing-cycle schema is implemented.
+
 ## CSV product import
 
 - `POST /api/imports/preview` accepts multipart CSV, creates a per-user staged

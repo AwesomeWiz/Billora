@@ -13,5 +13,6 @@ class Invoice(Base):
     issued_at = Column(DateTime(timezone=True), server_default=func.now())
     due_date = Column(DateTime(timezone=True), nullable=False)
     paid = Column(Boolean, default=False)
+    status = Column(String, nullable=False, default="CONFIRMED", server_default="CONFIRMED")
 
     subscription = relationship("Subscription", back_populates="invoices")

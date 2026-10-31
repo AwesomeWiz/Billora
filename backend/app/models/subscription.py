@@ -1,6 +1,6 @@
 # backend/app/models/subscription.py
 import uuid
-from sqlalchemy import Column, String, ForeignKey, DateTime, Enum, func
+from sqlalchemy import Column, String, ForeignKey, DateTime, Enum, func, Date
 from sqlalchemy.orm import relationship
 from ..core.db import Base
 from .plan import Plan
@@ -19,6 +19,7 @@ class Subscription(Base):
     start_date = Column(DateTime(timezone=True), server_default=func.now())
     end_date = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, nullable=False, default=SubscriptionStatus.ACTIVE)
+    next_billing_date = Column(Date, nullable=True)
 
     customer = relationship("Customer", back_populates="subscriptions")
     plan = relationship("Plan")

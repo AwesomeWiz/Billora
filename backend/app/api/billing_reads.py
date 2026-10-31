@@ -73,7 +73,7 @@ def subscription_dto(subscription: Subscription, customer: Customer, plan: Plan)
         recurring_amount_minor=plan.base_fee_minor if plan.bill_plan_base_fee else None,
         start_date=subscription.start_date.date() if subscription.start_date else None,
         expiry_date=subscription.end_date.date() if subscription.end_date else None,
-        next_billing_date=None,
+        next_billing_date=subscription.next_billing_date,
     )
 
 
@@ -93,7 +93,9 @@ def invoice_dto(
         billing_account_id=customer.account_id,
         issued_on=invoice.issued_at.date(),
         due_on=invoice.due_date.date(),
-        status="PAID" if invoice.paid else "CONFIRMED",
+        status="PAID" if invoice.paid else (
+            invoice.status if invoice.status in {"DRAFT", "CONFIRMED", "CANCELLED"} else "CONFIRMED"
+        ),
         currency="INR",
         total_minor=total,
         paid_minor=paid,

@@ -68,7 +68,7 @@ async def record_payment(
         invoice = await get_invoice_for_account(db, payload.invoice_id, None)
         if invoice is None:
             raise HTTPException(status_code=404, detail="Invoice not found")
-        if invoice.paid:
+        if invoice.paid or invoice.status != "CONFIRMED":
             raise HTTPException(status_code=409, detail="Invoice is not collectible")
 
         recorded = await db.scalar(
@@ -100,6 +100,7 @@ async def record_payment(
         ))
         if payload.amount_minor == balance:
             invoice.paid = True
+            invoice.status = "PAID"
         await db.commit()
         await db.refresh(payment)
         return payment
