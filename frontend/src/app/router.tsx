@@ -14,7 +14,7 @@ import { ProductsPage } from '../features/admin/products';
 import { PlansPage } from '../features/admin/plans';
 import { TaxesPage } from '../features/admin/taxes';
 import { DiscountsPage } from '../features/admin/discounts';
-import { QuotationTemplatesPage } from '../features/quotations';
+import { QuotationTemplatesPage, QuotationsPage } from '../features/quotations';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ReportsPage } from '../features/dashboard/ReportsPage';
 import { ErrorState, EmptyState } from '../components/ui';
@@ -49,6 +49,7 @@ export const routeConfig = [
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'subscriptions', element: <SubscriptionsPage /> },
       { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
+      { path: 'quotations', element: <QuotationsPage /> },
       { path: 'invoices', element: <InvoiceListPage /> },
       { path: 'invoices/:id', element: <InvoiceDetailPage /> },
       { path: 'catalog/products', element: <ProductsPage /> },
