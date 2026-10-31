@@ -1,6 +1,6 @@
 /**
- * Quotation Templates domain types and conversion utilities.
- * Aligned with ARCHITECTURE.md §4.2 (`quotation_templates`, `quotation_template_lines`),
+ * Quotation Templates and Full Quotations domain types and conversion utilities.
+ * Aligned with ARCHITECTURE.md §4.2 (`quotation_templates`, `quotation_template_lines`, `quotations`, `quotation_lines`, `subscriptions`),
  * PRD §4.3 (FR-QUOTE-01, FR-QUOTE-02, FR-QUOTE-03), and API specifications.
  */
 
@@ -64,6 +64,115 @@ export interface CreateQuotationTemplateInput {
   validity_days: number;
   active?: boolean;
   lines: CreateQuotationTemplateLineInput[];
+}
+
+/**
+ * Quotation statuses according to PRD §4.3 and ARCHITECTURE.md §4.2.
+ */
+export type QuotationStatus = 'ISSUED' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED';
+
+/**
+ * Subscription statuses according to ARCHITECTURE.md §4.2 lifecycle:
+ * DRAFT -> QUOTATION -> CONFIRMED -> ACTIVE -> CLOSED
+ */
+export type SubscriptionStatus =
+  | 'DRAFT'
+  | 'QUOTATION'
+  | 'CONFIRMED'
+  | 'ACTIVE'
+  | 'PAUSED'
+  | 'PENDING_CANCEL'
+  | 'CANCELLED'
+  | 'CLOSED'
+  | 'EXPIRED';
+
+export interface QuotationLine {
+  id?: string;
+  quotation_id?: string;
+  source_product_id: string;
+  variant_id?: string | null;
+  product_name?: string;
+  variant_name?: string | null;
+  description?: string | null;
+  /** Quantity of product units (integer >= 1) */
+  quantity: number;
+  /** Unit price in integer minor paise (INR) */
+  unit_price_minor: number;
+  /** Associated tax rule id if configured */
+  tax_rule_id?: string | null;
+  tax_rule_name?: string | null;
+  /** Computed line subtotal in minor paise (quantity * unit_price_minor) */
+  subtotal_minor?: number;
+}
+
+export interface QuotationSubscriptionSummary {
+  id: string;
+  code?: string;
+  status: SubscriptionStatus;
+  plan_id?: string;
+  plan_name?: string;
+  account_id?: string;
+}
+
+export interface Quotation {
+  id: string;
+  number: string;
+  subscription_id: string;
+  account_id: string;
+  customer_name?: string;
+  customer_email?: string;
+  template_id?: string | null;
+  template_name?: string | null;
+  issued_on: string;
+  valid_until: string;
+  status: QuotationStatus;
+  terms?: string | null;
+  subtotal_minor?: number;
+  tax_minor?: number;
+  total_minor?: number;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  lines: QuotationLine[];
+  subscription?: QuotationSubscriptionSummary | null;
+}
+
+export interface QuotationListParams {
+  search?: string;
+  status?: QuotationStatus | '';
+  account_id?: string;
+  subscription_id?: string;
+  from_date?: string;
+  to_date?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface QuotationListResponse {
+  items: Quotation[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_next: boolean;
+}
+
+export interface CreateQuotationLineInput {
+  source_product_id: string;
+  variant_id?: string | null;
+  quantity: number;
+  unit_price_minor: number;
+  tax_rule_id?: string | null;
+  description?: string | null;
+}
+
+export interface CreateQuotationInput {
+  account_id: string;
+  template_id?: string | null;
+  plan_id?: string | null;
+  validity_days?: number;
+  valid_until?: string;
+  terms?: string | null;
+  lines: CreateQuotationLineInput[];
 }
 
 /**
