@@ -6,6 +6,7 @@ import { CustomersPage } from '../features/customer/CustomersPage';
 import { CustomerDetailPage } from '../features/customer/CustomerDetailPage';
 import { SubscriptionsPage } from '../features/subscriptions/SubscriptionsPage';
 import { SubscriptionDetailPage } from '../features/subscriptions/SubscriptionDetailPage';
+import { InvoiceListPage } from '../features/billing/InvoiceListPage';
 import { WorkspaceHome } from '../features/dashboard/WorkspaceHome';
 import { ErrorState, EmptyState } from '../components/ui';
 import { AppShell } from './AppShell';
@@ -38,6 +39,7 @@ export const routeConfig = [
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'subscriptions', element: <SubscriptionsPage /> },
       { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
+      { path: 'invoices', element: <InvoiceListPage /> },
       { path: '*', element: <NotFoundPage embedded /> },
     ] },
   ] },

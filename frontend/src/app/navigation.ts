@@ -11,7 +11,7 @@ export function navigationFor(role: Role) {
   return [
     { label: 'Overview', to: '/app/overview', icon: LayoutDashboard, available: true },
     { label: 'Subscriptions', to: '/app/subscriptions', icon: Layers3, available: true },
-    { label: 'Invoices', to: '/app/invoices', icon: Receipt, available: false },
+    { label: 'Invoices', to: '/app/invoices', icon: Receipt, available: true },
     { label: 'Payments', to: '/app/payments', icon: Wallet, available: false },
     { label: 'Customers', to: '/app/customers', icon: Users, available: true },
     { label: 'Reports', to: '/app/reports', icon: BarChart3, available: false },
